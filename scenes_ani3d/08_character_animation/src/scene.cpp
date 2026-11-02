@@ -33,7 +33,11 @@ void scene_structure::initialize()
 	std::cout<<"- Load Maria-sword character"<<std::endl;
 	characters["Maria-sword"] = load_character_maria_sword();
 	characters["Maria-sword"].animated_model.apply_transformation({-2,0,0});
-	
+
+	std::cout<<"- Load Jerry character"<<std::endl;
+	characters["Jerry"] = load_character_jerry();
+	characters["Jerry"].animated_model.apply_transformation({2,0,0});
+
 
 	current_active_character = "Lola";
 

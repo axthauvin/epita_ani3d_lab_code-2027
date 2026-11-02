@@ -36,3 +36,14 @@ character_structure load_character_maria_sword() {
 
 	return character;
 }
+character_structure load_character_jerry() {
+	filename_loader_structure loader_param;
+	loader_param.set_skeleton(project::path+"assets/jerry/");
+	loader_param.add_rigged_mesh("body", project::path+"assets/jerry/mesh-default/", project::path+"assets/jerry/textures/t0364_0.png");
+	loader_param.add_animation("Run", project::path+"assets/jerry/animation/");
+
+	character_structure character;
+	character.load_and_initialize(loader_param, affine_rts().set_scaling(0.1f));
+
+	return character;
+}

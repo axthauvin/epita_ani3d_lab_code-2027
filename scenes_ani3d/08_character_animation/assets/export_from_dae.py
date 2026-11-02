@@ -84,6 +84,8 @@ def export_mesh(meshes, dir_out):
 def collada_parse_skeleton_hierarchy(collada_node):
 
     root_node = collada_node[0]
+    if 'matrix' not in root_node:
+        root_node = collada_node[1]
     visited_node = []
     node_to_visit = [(root_node,'-1')]
 

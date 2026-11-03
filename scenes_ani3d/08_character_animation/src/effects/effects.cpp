@@ -53,8 +53,6 @@ void effect_transition_compute(effect_transition_structure& effect_transition, c
 	 *  The objective is to fill "model.skeleton.joint_matrix_local and global"
 	 *     with the correct interpolated matrices corresponding to the blending between the source and destination animation 
 	 * 
-	 * 	
-	 * 
 	 *  Notes:
 	 *    - model.skeleton.joint_matrix_local is a numarray<mat4>. Its size corresponds to the number of joints.
 	 *    - joint_source_anim_local (/_global) contains the local (/global) matrices of the source animation
@@ -74,9 +72,26 @@ void effect_transition_compute(effect_transition_structure& effect_transition, c
 	 *      quaternion q = r.get_quaternion();
 	 *    - An affine_rt structure is a container for a rotation_transform and a translation. Its corresponding 4x4 matrix can be obtained
 	 *        with {affine_rt}.matrix();
-	 * 
-	 * 
 	 */
+
+	float const alpha = clamp(alpha_completion, 0.0f, 1.0f); // just to be sure
+	// TODO: remove debug
+	// std::cout << "alpha: " << alpha << std::endl;
+	int const N = model.skeleton.size();
+
+	for (int k = 0; k < N; k++)
+	{
+		affine_rt const a0 = affine_rt::from_matrix(joint_source_anim_local[k]);
+		affine_rt const a1 = affine_rt::from_matrix(joint_destination_anim_local[k]);
+
+		vec3 const t = (1.0f - alpha) * a0.translation + alpha * a1.translation;
+		rotation_transform const r = rotation_transform::slerp(a0.rotation, a1.rotation, alpha);
+
+		model.skeleton.joint_matrix_local[k] = affine_rt(r, t).matrix();
+	}
+
+	model.skeleton.update_joint_matrix_local_to_global();
+
 	transition.timer_source_anim.update();
 	transition.timer_destination_anim.update();
 	transition.timer_completion.update();

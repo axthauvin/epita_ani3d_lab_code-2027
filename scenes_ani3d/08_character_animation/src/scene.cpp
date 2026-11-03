@@ -69,6 +69,9 @@ void scene_structure::display_frame() {
   // ************************************************* //
   for (auto &entry : characters) {
     std::string character_name = entry.first;
+    // TODO: remove debug
+    // if (character_name != "Lola")
+    //   continue;
     character_structure &character = entry.second;
     effect_transition_structure &transition = effect_transition[character_name];
 

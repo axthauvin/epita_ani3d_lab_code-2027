@@ -68,7 +68,7 @@ namespace cgp
 		// Linear interpolation of rotation
 		static rotation_transform lerp(rotation_transform const& r1, rotation_transform const& r2, float const alpha);
 		// Spherical Linear interpolation of rotation
-		//static rotation slerp(rotation const& r1, rotation const& r2, float const alpha);
+		static rotation_transform slerp(rotation_transform const& r1, rotation_transform const& r2, float const alpha);
 
 	};
 

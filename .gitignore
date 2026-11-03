@@ -219,3 +219,7 @@ project
 # *.tar
 # *.tar.gz
 # *.rar
+
+# Additionals
+
+*.ini

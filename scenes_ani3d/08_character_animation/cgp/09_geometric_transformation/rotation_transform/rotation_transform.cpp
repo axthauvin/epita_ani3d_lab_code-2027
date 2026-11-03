@@ -204,7 +204,36 @@ namespace cgp
 		return rotation_transform{ q };
 	}
 
-	//rotation_transform rotation_transform::slerp(rotation_transform const& r1, rotation_transform const& r2, float const alpha);
+	rotation_transform rotation_transform::slerp(rotation_transform const& r1, rotation_transform const& r2, float const alpha)
+	{
+		quaternion q1 = r1.data;
+		quaternion q2 = r2.data;
+
+		// Take the shortest path
+		float d = dot(q1, q2);
+		if (d < 0) {
+			q2 *= -1.0f;
+			d = -d;
+		}
+
+		// Close to a LERP
+		if (d > 0.9995f) {
+			quaternion q = (1.0f - alpha) * q1 + alpha * q2;
+			q = q / norm(q);
+			return rotation_transform{ q };
+		}
+
+		// Formula from the lecture, slide number 7:
+		// https://graphicscomputing.fr/course/2026_2027/epita_ani3d/lecture_slides/06_character_animation/06_character_animation.pdf
+		float const theta = std::acos(d);
+		float const sin_theta = std::sin(theta);
+		float const w1 = std::sin((1.0f - alpha) * theta) / sin_theta;
+		float const w2 = std::sin(alpha * theta) / sin_theta;
+
+		quaternion q = w1 * q1 + w2 * q2;
+		q = q / norm(q);
+		return rotation_transform{ q };
+	}
 
 	rotation_transform inverse(rotation_transform const& r)
 	{

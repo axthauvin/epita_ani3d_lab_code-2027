@@ -169,7 +169,7 @@ void effect_walking(effect_walking_structure& effect_walking,  character_structu
 		effect_walking.root_angle -= angular_speed * dt;
 
 	// Get orientation transformation
-	// {0, 1, 0} because floor os the xz plane
+	// {0, 1, 0} because floor is the xz plane so the character can only rotate on the y axis
 	rotation_transform const R = rotation_axis_angle({0, 1, 0}, effect_walking.root_angle);
 
 	// Move forward input
@@ -232,6 +232,30 @@ void effect_rotate_head_toward_objective_position(skeleton_structure& skeleton, 
 	 *  skeleton.joint_matrix_local/global[joint_head_index] = ... // something that depends on the objective_position
 	 * 
 	 */
+
+	mat4 const& G = skeleton.joint_matrix_global[joint_head_index];
+	vec3 const to_target = objective_position - G.get_block_translation(); // vector direction to the target
+	float const length = norm(to_target);
+	if (length < 1e-5f)
+		return;
+
+	// Direction towards the target
+	// Get inverse with transpose: from global space to head space
+	vec3 const d = transpose(G.get_block_linear()) * (to_target / length);
+
+	float yaw = std::atan2(d.x, d.z);
+	float pitch = std::asin(clamp(d.y, -1.0f, 1.0f));
+	// Define plausible head orientation limits
+	yaw = clamp(yaw, -1.2f, 1.2f);
+	pitch = clamp(pitch, -0.6f, 0.6f);
+
+	// Combine rotations (two degrees of freedom)
+	mat3 const R = (rotation_axis_angle({0, 1, 0}, yaw) * rotation_axis_angle({1, 0, 0}, -pitch)).matrix();
+
+	// Apply rotation
+	mat4& L = skeleton.joint_matrix_local[joint_head_index];
+	L.set_block_linear(L.get_block_linear() * R);
+	skeleton.update_joint_matrix_local_to_global();
 }
 
 

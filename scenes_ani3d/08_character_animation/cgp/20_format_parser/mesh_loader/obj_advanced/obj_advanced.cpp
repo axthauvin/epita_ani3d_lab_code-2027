@@ -1,5 +1,7 @@
 #include "obj_advanced.hpp"
 
+#include <cmath>
+
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "third_party/tinyobj/tiny_obj_loader.hpp"
 
@@ -52,20 +54,24 @@ namespace cgp
 			if (texture_filename != "") {
 				texture_array[k].load_and_initialize_texture_2d_on_gpu(directory + texture_filename, GL_REPEAT, GL_REPEAT);
 			}
-			else if (materials[k].diffuse[0] != 0 || materials[k].diffuse[1] != 0 || materials[k].diffuse[2] != 0) {
-				// AXELFIX: create 1x1 texture
-				grid_2D<vec3> color_image(1, 1);
-				
-				color_image(0, 0) = { 
-					materials[k].diffuse[0], 
-					materials[k].diffuse[1], 
-					materials[k].diffuse[2] 
-				};
-				
-				texture_array[k].initialize_texture_2d_on_gpu(color_image, GL_REPEAT, GL_REPEAT);
-			}
 			else {
-				texture_array[k] = mesh_drawable::default_texture;
+				// AXELFIX: create 1x1 texture
+
+				// Blender exports Kd in LINEAR space
+				// https://gamedev.stackexchange.com/questions/92015/optimized-linear-to-srgb-glsl
+				auto linear_to_srgb = [](float c) {
+					if (c <= 0.0031308f)
+						return 12.92f * c;
+					return 1.055f * std::pow(c, 1.0f / 2.4f) - 0.055f;
+				};
+
+				grid_2D<vec3> color_image(1, 1);
+				color_image(0, 0) = {
+					linear_to_srgb(materials[k].diffuse[0]),
+					linear_to_srgb(materials[k].diffuse[1]),
+					linear_to_srgb(materials[k].diffuse[2])
+				};
+				texture_array[k].initialize_texture_2d_on_gpu(color_image, GL_REPEAT, GL_REPEAT);
 			}
 			
 		}

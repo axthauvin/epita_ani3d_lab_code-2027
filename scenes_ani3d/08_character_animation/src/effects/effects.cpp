@@ -120,7 +120,6 @@ void effect_walking_keyboard_event(effect_transition_structure& effect_transitio
 // This function is called at every frame when the walk effect is active
 void effect_walking(effect_walking_structure& effect_walking,  character_structure& character, cgp::input_devices const& inputs, effect_transition_structure const& effect_transition)
 {
-
 	/** TO DO : An displacement of the character along the direction of the walk.
 	 *   The character should be able to move straight, and turn, based on the user command.
 	 *  
@@ -157,6 +156,59 @@ void effect_walking(effect_walking_structure& effect_walking,  character_structu
 	 * 
 	 * 
 	 */
+
+	float const dt = inputs.time_interval;
+	// NOTE: Could be added in the GUI
+	float const speed = 3.0f;
+	float const angular_speed = 2.0f;
+
+	// Left and right orientation inputs
+	if (inputs.keyboard.is_pressed(GLFW_KEY_LEFT) || inputs.keyboard.is_pressed(GLFW_KEY_A))
+		effect_walking.root_angle += angular_speed * dt;
+	if (inputs.keyboard.is_pressed(GLFW_KEY_RIGHT) || inputs.keyboard.is_pressed(GLFW_KEY_D))
+		effect_walking.root_angle -= angular_speed * dt;
+
+	// Get orientation transformation
+	// {0, 1, 0} because floor os the xz plane
+	rotation_transform const R = rotation_axis_angle({0, 1, 0}, effect_walking.root_angle);
+
+	// Move forward input
+	if (inputs.keyboard.is_pressed(GLFW_KEY_UP) || inputs.keyboard.is_pressed(GLFW_KEY_W))
+		effect_walking.root_position += speed * dt * (R * vec3(0, 0, 1));
+
+	skeleton_structure& skeleton = character.animated_model.skeleton;
+	auto const& animations = character.animated_model.animation;
+
+	// NOTE:
+	// Linear part (L, the 3x3 block):
+	//   It contains the rotation (and possibly the scale).
+	//   It specifies how the coordinate system is oriented—that is, where its x, y, and z axes point.
+	// Translation component (t, the 3x1 vector):
+	//   It contains the position of the coordinate system’s origin, that is where the joint is located.
+
+	// Evaluate root node at time 0
+	// I am sure there is simpler than this implementation...
+	// cgp::mat4 skeleton_animation_structure::evaluate(int k_joint, float t) const;
+	vec3 reference = animations.at(character.current_animation_name).evaluate(0, 0.0f).get_block_translation();
+	if (effect_transition.active) {
+		float const a = clamp(effect_transition.timer_completion.t, 0.0f, 1.0f);
+		vec3 const r0 = animations.at(effect_transition.source_anim).evaluate(0, 0.0f).get_block_translation();
+		vec3 const r1 = animations.at(effect_transition.destination_anim).evaluate(0, 0.0f).get_block_translation();
+		// How much the character moves forward
+		reference = (1.0f - a) * r0 + a * r1;
+	}
+
+	mat4& M = skeleton.joint_matrix_local[0];
+	vec3 t = M.get_block_translation();
+	t.x = reference.x;
+	// t.y: no need to change it for now
+	t.z = reference.z;
+
+	mat3 const L = M.get_block_linear();
+	// Move the (reference) character
+	M.set_block_linear(R.matrix() * L);
+	M.set_block_translation(R * t + effect_walking.root_position);
+	skeleton.update_joint_matrix_local_to_global();
 }
 
 

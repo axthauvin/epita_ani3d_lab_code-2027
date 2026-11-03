@@ -52,9 +52,22 @@ namespace cgp
 			if (texture_filename != "") {
 				texture_array[k].load_and_initialize_texture_2d_on_gpu(directory + texture_filename, GL_REPEAT, GL_REPEAT);
 			}
+			else if (materials[k].diffuse[0] != 0 || materials[k].diffuse[1] != 0 || materials[k].diffuse[2] != 0) {
+				// AXELFIX: create 1x1 texture
+				grid_2D<vec3> color_image(1, 1);
+				
+				color_image(0, 0) = { 
+					materials[k].diffuse[0], 
+					materials[k].diffuse[1], 
+					materials[k].diffuse[2] 
+				};
+				
+				texture_array[k].initialize_texture_2d_on_gpu(color_image, GL_REPEAT, GL_REPEAT);
+			}
 			else {
 				texture_array[k] = mesh_drawable::default_texture;
 			}
+			
 		}
 
 

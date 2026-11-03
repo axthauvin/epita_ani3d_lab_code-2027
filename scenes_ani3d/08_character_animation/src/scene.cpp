@@ -5,6 +5,7 @@
 using namespace cgp;
 
 void initialize_ground(mesh_drawable &ground);
+void initialize_house(std::vector<mesh_drawable> &house);
 
 void scene_structure::initialize() {
   camera_control.initialize(inputs,
@@ -19,6 +20,9 @@ void scene_structure::initialize() {
   sphere_ik.material.color = {1, 0, 0};
 
   initialize_ground(ground);
+
+  std::cout << "- Load house" << std::endl;
+  initialize_house(house);
 
   std::cout << "- Load Lola character" << std::endl;
   characters["Lola"] = load_character_lola();
@@ -58,6 +62,10 @@ void scene_structure::display_frame() {
 
   if (gui.display_ground)
     draw(ground, environment);
+
+  if (gui.display_house)
+    for (auto &mesh : house)
+      draw(mesh, environment);
 
   // Update the local time for each character
   for (auto &entry : characters) {
@@ -179,6 +187,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Global Frame", &gui.display_frame);
   ImGui::SameLine();
   ImGui::Checkbox("Ground", &gui.display_ground);
+  ImGui::SameLine();
+  ImGui::Checkbox("House", &gui.display_house);
   ImGui::Checkbox("Wireframe", &gui.display_wireframe);
   ImGui::Checkbox("Display surface", &gui.display_surface);
   ImGui::SameLine();
@@ -372,4 +382,12 @@ void initialize_ground(mesh_drawable &ground) {
   ground.texture.load_and_initialize_texture_2d_on_gpu(
       project::path + "assets/texture_wood.jpg", GL_REPEAT, GL_REPEAT);
   ground.material.phong = {1, 0, 0, 1};
+}
+
+void initialize_house(std::vector<mesh_drawable> &house) {
+  auto elements =
+      mesh_load_file_obj_advanced(project::path + "assets/house/", "house.obj");
+  house = mesh_obj_advanced_loader::convert_to_mesh_drawable(elements);
+  for (auto &part : house)
+    part.model.scaling = 0.2f; // TODO: change to a better factor
 }

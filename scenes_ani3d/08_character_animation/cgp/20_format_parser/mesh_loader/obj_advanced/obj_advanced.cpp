@@ -97,6 +97,7 @@ namespace cgp
 					if (idx_material_previous != -1)
 					{
 						mesh_obj_advanced_loader::shape_element_node node;
+						node.name = shapes[shape_idx].name;
 						node.mesh_element = mesh_current;
 						node.texture_element = texture_array[idx_material_previous];
 
@@ -146,6 +147,7 @@ namespace cgp
 
 				if (f == shapes[shape_idx].mesh.num_face_vertices.size() - 1) {
 					mesh_obj_advanced_loader::shape_element_node node;
+					node.name = shapes[shape_idx].name;
 					node.mesh_element = mesh_current;
 					node.texture_element = (idx_material >= 0) ? texture_array[idx_material] : mesh_drawable::default_texture;
 					data.push_back(node);

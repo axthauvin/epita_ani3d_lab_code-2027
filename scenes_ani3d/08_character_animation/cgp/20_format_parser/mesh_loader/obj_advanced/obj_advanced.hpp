@@ -8,6 +8,7 @@ namespace cgp
 	namespace mesh_obj_advanced_loader
 	{
 		struct shape_element_node {
+			std::string name;
 			mesh mesh_element;
 			opengl_texture_image_structure texture_element;
 		};

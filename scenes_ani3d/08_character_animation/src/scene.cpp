@@ -24,27 +24,27 @@ void scene_structure::initialize() {
   std::cout << "- Load house" << std::endl;
   initialize_house(house);
 
-  std::cout << "- Load Lola character" << std::endl;
-  characters["Lola"] = load_character_lola();
-
-  characters["Lola2"] = load_character_lola();
-  characters["Lola2"].set_current_animation("Dance4");
-  characters["Lola2"].animated_model.apply_transformation(
-      {-0.5f, 0, 2}, rotation_axis_angle({0, 1, 0}, Pi));
-
-  std::cout << "- Load Maria-sword character" << std::endl;
-  characters["Maria-sword"] = load_character_maria_sword();
-  characters["Maria-sword"].animated_model.apply_transformation({-2, 0, 0});
+  // std::cout << "- Load Lola character" << std::endl;
+  // characters["Lola"] = load_character_lola();
+  //
+  // characters["Lola2"] = load_character_lola();
+  // characters["Lola2"].set_current_animation("Dance4");
+  // characters["Lola2"].animated_model.apply_transformation(
+  //     {-0.5f, 0, 2}, rotation_axis_angle({0, 1, 0}, Pi));
+  //
+  // std::cout << "- Load Maria-sword character" << std::endl;
+  // characters["Maria-sword"] = load_character_maria_sword();
+  // characters["Maria-sword"].animated_model.apply_transformation({-2, 0, 0});
 
   std::cout << "- Load Jerry character" << std::endl;
   characters["Jerry"] = load_character_jerry();
-  characters["Jerry"].animated_model.apply_transformation({2, 0, 0});
+  characters["Jerry"].animated_model.apply_transformation({-3.5f, 0, 0});
 
   std::cout << "- Load Tom character" << std::endl;
   characters["Tom"] = load_character_tom();
-  characters["Tom"].animated_model.apply_transformation({3, 0, 0});
+  characters["Tom"].animated_model.apply_transformation({1.5f, 0, 0});
 
-  current_active_character = "Lola";
+  current_active_character = "Tom";
 
   for (auto &entry : characters)
     entry.second.timer.start();

@@ -158,9 +158,8 @@ void effect_walking(effect_walking_structure& effect_walking,  character_structu
 	 */
 
 	float const dt = inputs.time_interval;
-	// NOTE: Could be added in the GUI
-	float const speed = 3.0f;
-	float const angular_speed = 2.0f;
+	float const speed = 4.0f;
+	float const angular_speed = 3.0f;
 
 	// Left and right orientation inputs
 	if (inputs.keyboard.is_pressed(GLFW_KEY_LEFT) || inputs.keyboard.is_pressed(GLFW_KEY_A))
@@ -176,38 +175,23 @@ void effect_walking(effect_walking_structure& effect_walking,  character_structu
 	if (inputs.keyboard.is_pressed(GLFW_KEY_UP) || inputs.keyboard.is_pressed(GLFW_KEY_W))
 		effect_walking.root_position += speed * dt * (R * vec3(0, 0, 1));
 
-	skeleton_structure& skeleton = character.animated_model.skeleton;
-	auto const& animations = character.animated_model.animation;
+	effect_place_root(character.animated_model.skeleton, effect_walking.root_position, effect_walking.root_angle);
+}
 
-	// NOTE:
-	// Linear part (L, the 3x3 block):
-	//   It contains the rotation (and possibly the scale).
-	//   It specifies how the coordinate system is oriented—that is, where its x, y, and z axes point.
-	// Translation component (t, the 3x1 vector):
-	//   It contains the position of the coordinate system’s origin, that is where the joint is located.
-
-	// Evaluate root node at time 0
-	// I am sure there is simpler than this implementation...
-	// cgp::mat4 skeleton_animation_structure::evaluate(int k_joint, float t) const;
-	vec3 reference = animations.at(character.current_animation_name).evaluate(0, 0.0f).get_block_translation();
-	if (effect_transition.active) {
-		float const a = clamp(effect_transition.timer_completion.t, 0.0f, 1.0f);
-		vec3 const r0 = animations.at(effect_transition.source_anim).evaluate(0, 0.0f).get_block_translation();
-		vec3 const r1 = animations.at(effect_transition.destination_anim).evaluate(0, 0.0f).get_block_translation();
-		// How much the character moves forward
-		reference = (1.0f - a) * r0 + a * r1;
-	}
-
+void effect_place_root(skeleton_structure& skeleton, vec3 const& position, float angle)
+{
 	mat4& M = skeleton.joint_matrix_local[0];
-	vec3 t = M.get_block_translation();
-	t.x = reference.x;
-	// t.y: no need to change it for now
-	t.z = reference.z;
+	rotation_transform const R = rotation_axis_angle({0, 1, 0}, angle);
 
-	mat3 const L = M.get_block_linear();
+	// Remove the horizontal drift of the animation: only the agent position moves the character
+	vec3 t = M.get_block_translation();
+	t.x = 0.0f;
+	// t.y: no need to change it for now
+	t.z = 0.0f;
+
 	// Move the (reference) character
-	M.set_block_linear(R.matrix() * L);
-	M.set_block_translation(R * t + effect_walking.root_position);
+	M.set_block_linear(R.matrix() * M.get_block_linear());
+	M.set_block_translation(R * t + position);
 	skeleton.update_joint_matrix_local_to_global();
 }
 

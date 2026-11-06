@@ -15,7 +15,7 @@ struct gui_parameters {
 	bool display_frame = false;
 	bool display_wireframe = false;
 	bool display_surface = true;
-	bool display_ground = true;
+	bool display_ground = false;
 	bool display_house = true;
 	bool display_texture = true;
 	bool display_skeleton = true;

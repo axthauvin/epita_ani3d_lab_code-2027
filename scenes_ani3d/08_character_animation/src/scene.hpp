@@ -23,6 +23,10 @@ struct gui_parameters {
 	bool display_skeleton_joint_frame = false;
 	bool display_skeleton_bone = true;
 	bool rotate_head_effect_active = false;
+	bool chase_active = false;
+	bool display_nav_grid = false;
+	bool display_nav_free = false;
+	bool display_paths = true;
 };
 
 
@@ -62,6 +66,11 @@ struct scene_structure : cgp::scene_inputs_generic {
 	mesh_drawable sphere_ik;
 	mesh_drawable ground;
 	std::vector<mesh_drawable> house; // One drawable per material of the house
+
+	std::vector<cgp::vec3> holes;
+	std::vector<std::pair<cgp::vec3, cgp::vec3>> hole_boxes;
+	std::vector<cgp::mesh> house_collision_meshes;
+
 
 	// ****************************** //
 	// Functions

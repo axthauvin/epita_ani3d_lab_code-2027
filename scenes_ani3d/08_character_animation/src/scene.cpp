@@ -1,11 +1,18 @@
 #include "scene.hpp"
 
+#include <map>
+#include <regex>
+
 #include "character_loader/character_loader.hpp"
 
 using namespace cgp;
 
+float const house_scale = 0.2f;
+
 void initialize_ground(mesh_drawable &ground);
-void initialize_house(std::vector<mesh_drawable> &house);
+void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
+                      std::vector<std::pair<vec3, vec3>> &hole_boxes,
+                      std::vector<mesh> &collision_meshes);
 
 void scene_structure::initialize() {
   camera_control.initialize(inputs,
@@ -22,7 +29,7 @@ void scene_structure::initialize() {
   initialize_ground(ground);
 
   std::cout << "- Load house" << std::endl;
-  initialize_house(house);
+  initialize_house(house, holes, hole_boxes, house_collision_meshes);
 
   // std::cout << "- Load Lola character" << std::endl;
   // characters["Lola"] = load_character_lola();
@@ -77,9 +84,6 @@ void scene_structure::display_frame() {
   // ************************************************* //
   for (auto &entry : characters) {
     std::string character_name = entry.first;
-    // TODO: remove debug
-    // if (character_name != "Lola")
-    //   continue;
     character_structure &character = entry.second;
     effect_transition_structure &transition = effect_transition[character_name];
 
@@ -384,10 +388,50 @@ void initialize_ground(mesh_drawable &ground) {
   ground.material.phong = {1, 0, 0, 1};
 }
 
-void initialize_house(std::vector<mesh_drawable> &house) {
-  auto elements =
-      mesh_load_file_obj_advanced(project::path + "assets/house/", "house.obj");
+void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
+                      std::vector<std::pair<vec3, vec3>> &hole_boxes,
+                      std::vector<mesh> &collision_meshes) {
+  auto elements = mesh_load_file_obj_advanced(project::path + "assets/house/", "house.obj");
+
+  // Several elements can share the same name: accumulate one box per hole id
+  std::regex const hole_regex("TrouSouris_(\\d+)_Tunnel");
+  std::map<int, std::pair<vec3, vec3>> boxes;
+
+  holes.clear();
+  hole_boxes.clear();
+  collision_meshes.clear();
+
+  for (auto const &elm : elements) {
+    std::smatch match;
+    // Check if the mesh represents a mouse hole (from its name)
+    if (std::regex_search(elm.name, match, hole_regex)) {
+      int const id = std::stoi(match[1].str());
+      for (int k = 0; k < int(elm.mesh_element.position.size()); k++) {
+        vec3 const q = house_scale * elm.mesh_element.position[k];
+        if (boxes.find(id) == boxes.end())
+          boxes[id] = {q, q};
+        auto &b = boxes[id];
+        // Update bounding boxe size
+        b.first = {std::min(b.first.x, q.x), std::min(b.first.y, q.y), std::min(b.first.z, q.z)};
+        b.second = {std::max(b.second.x, q.x), std::max(b.second.y, q.y), std::max(b.second.z, q.z)};
+      }
+    } else {
+      // Every other element is an obstacle candidate, scaled to world coordinates
+      mesh m = elm.mesh_element;
+      for (int k = 0; k < int(m.position.size()); k++)
+        m.position[k] *= house_scale;
+      collision_meshes.push_back(m);
+    }
+  }
+
+  // Record every nouse holes
+  for (auto const &entry : boxes) {
+    hole_boxes.push_back(entry.second);
+    // Get the middle of the bounding boxe
+    holes.push_back(0.5f * (entry.second.first + entry.second.second));
+  }
+
   house = mesh_obj_advanced_loader::convert_to_mesh_drawable(elements);
   for (auto &part : house)
-    part.model.scaling = 0.2f; // TODO: change to a better factor
+    part.model.scaling = house_scale;
 }

@@ -49,6 +49,9 @@ void chase_debug_initialize(chase_debug_structure& d, nav_grid_structure const& 
     build_cells(d.grid_blocked, g, [&](int c) { return g.blocked[c] != 0; }, {1.0f, 0.2f, 0.2f}, y);
     build_cells(d.grid_hole, g, [&](int c) { return !g.blocked[c] && g.hole_id[c] >= 0; }, {0.2f, 0.4f, 1.0f}, y + 0.005f);
     build_cells(d.grid_free, g, [&](int c) { return !g.blocked[c] && g.hole_id[c] < 0; }, {0.3f, 0.9f, 0.3f}, y - 0.005f);
+
+    d.marker.initialize_data_on_gpu(mesh_primitive_sphere());
+    d.marker.material.phong = {1, 0, 0, 1};
 }
 
 void chase_debug_draw(chase_debug_structure& d, chase_structure const& c, nav_grid_structure const& g,
@@ -65,4 +68,23 @@ void chase_debug_draw(chase_debug_structure& d, chase_structure const& c, nav_gr
         if (show_free_cells && d.grid_free.valid)
             draw(d.grid_free.drawable, environment);
     }
+
+    // TODO: add refresh_curves
+
+    // TODO: draw cruves
+
+    // Markers: holes (blue), hole exits (cyan), Jerry goal (green)
+    auto draw_marker = [&](vec2 const& p, float size, vec3 const& color) {
+        d.marker.model.translation = {p.x, g.floor_y + size, p.y};
+        d.marker.model.scaling = size;
+        d.marker.material.color = color;
+        draw(d.marker, environment);
+    };
+
+    for (size_t h = 0; h < g.hole_center.size(); h++) {
+        draw_marker(g.hole_center[h], 0.05f, {0.2f, 0.4f, 1.0f});
+        draw_marker(g.hole_exit[h], 0.03f, {0.0f, 0.9f, 0.9f});
+    }
+
+    // TODO: draw Jerry goal
 }

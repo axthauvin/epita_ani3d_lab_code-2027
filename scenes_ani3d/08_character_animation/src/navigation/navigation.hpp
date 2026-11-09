@@ -63,8 +63,31 @@ struct nav_build_parameters {
     float margin = 0.1f;        // distance to obstacles (radius of the characters)
 };
 
-// Build the grid from obstacle meshes (already scaled to world coordinates) and the mouse-hole boxes
+// Build the grid from obstacle meshes (already scaled to world coordinates) and the mouse-hole boxes.
 void nav_grid_build(nav_grid_structure& grid,
                     std::vector<cgp::mesh> const& obstacle_meshes,
                     std::vector<std::pair<cgp::vec3, cgp::vec3>> const& hole_boxes,
                     nav_build_parameters const& param);
+
+// Nearest free cell, search ring by ring around the starting point
+int nav_nearest_free_cell(nav_grid_structure const& grid, cgp::vec2 const& p, bool allow_holes);
+
+struct nav_search_result {
+    std::vector<float> dist;    // world distance from start (INF if unreached)
+    std::vector<int> parent;    // parent cell on the shortest path (-1 for start / unreached)
+};
+
+// A* if goal >= 0, Dijkstra over the whole grid if goal < 0.
+// accept(cell, distance) can forbid the expansion into a cell.
+nav_search_result nav_search(nav_grid_structure const& grid, int start, int goal, bool allow_holes,
+                             std::function<bool(int, float)> const& accept = nullptr);
+
+// Cell centers from the search start to the goal (empty if unreached).
+std::vector<cgp::vec2> nav_extract_path(nav_grid_structure const& grid, nav_search_result const& result, int goal);
+
+// Check if cells on the path are free
+bool nav_line_of_sight(nav_grid_structure const& grid, cgp::vec2 const& a, cgp::vec2 const& b, bool allow_holes);
+
+// String pulling followed by Catmull-Rom smoothing. Output is a dense polyline.
+std::vector<cgp::vec2> nav_smooth_path(nav_grid_structure const& grid, std::vector<cgp::vec2> const& points, bool allow_holes);
+

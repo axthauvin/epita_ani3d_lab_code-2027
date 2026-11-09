@@ -17,7 +17,7 @@ struct gui_parameters {
 	bool display_frame = false;
 	bool display_wireframe = false;
 	bool display_surface = true;
-	bool display_house = true;
+	bool display_house = false;
 	bool display_texture = true;
 	bool display_skeleton = true;
 	bool display_skeleton_joint_sphere = false;
@@ -26,8 +26,8 @@ struct gui_parameters {
 	bool rotate_head_effect_active = false;
 	// Chase params
 	bool chase_active = false;
-	bool display_nav_grid = false;
-	bool display_nav_free = false;
+	bool display_nav_grid = true;
+	bool display_nav_free = true;
 	bool display_paths = true;
 };
 

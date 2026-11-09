@@ -28,9 +28,7 @@ void scene_structure::initialize() {
   initialize_house(house, holes, hole_boxes, house_collision_meshes);
   nav_build_parameters nav_param;
   nav_grid_build(nav_grid, house_collision_meshes, hole_boxes, nav_param);
-  chase_debug_initialize(chase_debug, nav_grid);
-  // TODO: remove debug
-  // std::cout << "Grid " << nav_grid.nx << " x " << nav_grid.nz << ", floor_y = " << nav_grid.floor_y << std::endl;
+  chase_debug_initialize(chase_debug, nav_grid); // TODO: tempo
 
   std::cout << "- Load Jerry character" << std::endl;
   characters["Jerry"] = load_character_jerry();
@@ -39,6 +37,20 @@ void scene_structure::initialize() {
   std::cout << "- Load Tom character" << std::endl;
   characters["Tom"] = load_character_tom();
   characters["Tom"].animated_model.apply_transformation({1.5f, 0, 0});
+
+  chase_initialize(chase, nav_grid);
+  // TODO: remove debug
+  if (nav_grid.hole_exit.size() >= 2) {
+    std::cout << "nav_grid.hole_exit.size(): " << nav_grid.hole_exit.size() << std::endl;
+    int a = nav_grid.cell_of(nav_grid.hole_exit[0]);
+    int b = nav_grid.cell_of(nav_grid.hole_exit[1]);
+    nav_search_result r = nav_search(nav_grid, a, b, false);
+    std::vector<vec2> raw = nav_extract_path(nav_grid, r, b);
+    std::cout << "A* path length: " << raw.size() << " cells" << std::endl;
+    chase.tom.path_raw = raw;
+    chase.tom.path = nav_smooth_path(nav_grid, raw, false);
+    chase.tom.path_version++;
+  }
 
   current_active_character = "Tom";
 
@@ -217,8 +229,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Grid", &gui.display_nav_grid);
   ImGui::SameLine();
   ImGui::Checkbox("Free cells", &gui.display_nav_free);
-  // ImGui::SameLine();
-  // TODO: checkbox display paths
+  ImGui::SameLine();
+  ImGui::Checkbox("Paths", &gui.display_paths);
   ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
   // TODO: add catch gap

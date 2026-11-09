@@ -11,6 +11,12 @@ struct agent_structure {
     float speed = 1.5f;
     float max_turn = 6.0f;             // max angular speed (rad/s)
     float angle_offset = 0.0f;         // correction if the model does not face +z by default
+
+    // Path finding
+    std::vector<cgp::vec2> path;       // smoothed path followed
+    std::vector<cgp::vec2> path_raw;   // raw A* cells
+    size_t path_index = 0;
+    int path_version = 0;              // incremented at each path change (debug refresh)
 };
 
 struct chase_parameters {

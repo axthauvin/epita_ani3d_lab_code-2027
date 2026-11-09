@@ -14,6 +14,10 @@ void chase_initialize(chase_structure& c, nav_grid_structure const& g)
         jerry_start = g.hole_exit[0];
         tom_start = g.hole_exit[1];
     }
+    else {
+        // Too lazy to code the else condition
+        return;
+    }
 
     c.jerry.position = jerry_start;
     c.tom.position = tom_start;

@@ -39,18 +39,6 @@ void scene_structure::initialize() {
   characters["Tom"].animated_model.apply_transformation({1.5f, 0, 0});
 
   chase_initialize(chase, nav_grid);
-  // TODO: remove debug
-  if (nav_grid.hole_exit.size() >= 2) {
-    std::cout << "nav_grid.hole_exit.size(): " << nav_grid.hole_exit.size() << std::endl;
-    int a = nav_grid.cell_of(nav_grid.hole_exit[0]);
-    int b = nav_grid.cell_of(nav_grid.hole_exit[1]);
-    nav_search_result r = nav_search(nav_grid, a, b, false);
-    std::vector<vec2> raw = nav_extract_path(nav_grid, r, b);
-    std::cout << "A* path length: " << raw.size() << " cells" << std::endl;
-    chase.tom.path_raw = raw;
-    chase.tom.path = nav_smooth_path(nav_grid, raw, false);
-    chase.tom.path_version++;
-  }
 
   current_active_character = "Tom";
 
@@ -96,6 +84,16 @@ void scene_structure::display_frame() {
       effect_transition_stop_if_completed(transition, character);
     }
   }
+
+  // Chasing
+  if (gui.chase_active) {
+    chase_update(chase, nav_grid, inputs.time_interval);
+    chase_apply(chase, nav_grid, characters["Tom"], characters["Jerry"]);
+  } else {
+    characters["Tom"].timer.scale = 1.0f;
+    characters["Jerry"].timer.scale = 1.0f;
+  }
+
 
   // ********************************** //
   // Apply effects on the skeleton

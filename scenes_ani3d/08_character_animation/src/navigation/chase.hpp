@@ -22,8 +22,8 @@ struct agent_structure {
 };
 
 struct chase_parameters {
-    float tom_speed = 1.5f;
-    float jerry_speed = 1.65f;
+    float tom_speed = 4.0f;
+    float jerry_speed = 4.15f;
     float catch_gap = 0.5f;             // Tom never gets closer than this to Jerry
     float replan_period = 0.3f;
     float safety_time = 0.3f;           // Jerry must reach a cell this much earlier than Tom

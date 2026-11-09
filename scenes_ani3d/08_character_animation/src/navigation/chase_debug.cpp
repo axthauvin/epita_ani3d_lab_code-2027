@@ -41,6 +41,38 @@ void build_cells(debug_mesh_structure& out, nav_grid_structure const& g, std::fu
     out.drawable.material.phong = {1, 0, 0, 1}; // ambient only: flat color
 }
 
+// Upload a 2D polyline as a curve at height y
+void set_curve(debug_curve_structure& dc, std::vector<vec2> const& pts, float y, vec3 const& color)
+{
+    if (dc.valid)
+        dc.curve.clear();
+
+    dc.valid = false;
+
+    if (pts.size() < 2)
+        return;
+
+    numarray<vec3> v;
+
+    for (vec2 const& p : pts)
+        v.push_back({p.x, y, p.y});
+
+    dc.curve.initialize_data_on_gpu(v);
+    dc.curve.color = color;
+    dc.valid = true;
+}
+
+void refresh_curves(debug_curve_structure& smooth, debug_curve_structure& raw, agent_structure const& a,
+                    float y, vec3 const& color_smooth, vec3 const& color_raw)
+{
+    if (smooth.version == a.path_version)
+        return;
+
+    smooth.version = a.path_version;
+    set_curve(smooth, a.path, y + 0.04f, color_smooth);
+    set_curve(raw, a.path_raw, y + 0.02f, color_raw);
+}
+
 } // namespace
 
 void chase_debug_initialize(chase_debug_structure& d, nav_grid_structure const& g)
@@ -69,9 +101,17 @@ void chase_debug_draw(chase_debug_structure& d, chase_structure const& c, nav_gr
             draw(d.grid_free.drawable, environment);
     }
 
-    // TODO: add refresh_curves
+    refresh_curves(d.tom_path, d.tom_raw, c.tom, g.floor_y, {1.0f, 0.0f, 0.0f}, {1.0f, 0.6f, 0.0f});
+    refresh_curves(d.jerry_path, d.jerry_raw, c.jerry, g.floor_y, {0.0f, 0.7f, 0.0f}, {0.9f, 0.9f, 0.0f});
 
-    // TODO: draw cruves
+    if (d.tom_raw.valid)
+        draw(d.tom_raw.curve, environment);
+    if (d.jerry_raw.valid)
+        draw(d.jerry_raw.curve, environment);
+    if (d.tom_path.valid)
+        draw(d.tom_path.curve, environment);
+    if (d.jerry_path.valid)
+        draw(d.jerry_path.curve, environment);
 
     // Markers: holes (blue), hole exits (cyan), Jerry goal (green)
     auto draw_marker = [&](vec2 const& p, float size, vec3 const& color) {

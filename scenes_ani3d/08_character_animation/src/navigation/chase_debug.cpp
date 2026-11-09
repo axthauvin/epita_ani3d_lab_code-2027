@@ -126,5 +126,6 @@ void chase_debug_draw(chase_debug_structure& d, chase_structure const& c, nav_gr
         draw_marker(g.hole_exit[h], 0.03f, {0.0f, 0.9f, 0.9f});
     }
 
-    // TODO: draw Jerry goal
+    if (c.jerry_goal >= 0)
+        draw_marker(c.jerry_goal_pos, 0.04f, {0.0f, 1.0f, 0.0f});
 }

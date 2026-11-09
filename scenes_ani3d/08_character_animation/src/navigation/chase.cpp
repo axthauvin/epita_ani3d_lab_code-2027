@@ -108,12 +108,164 @@ void tom_replan(chase_structure& c, nav_grid_structure const& g)
 
 void jerry_replan(chase_structure& c, nav_grid_structure const& g)
 {
-    // TODO: implement
+    chase_parameters const& p = c.param;
+    agent_structure& jerry = c.jerry;
+    agent_structure const& tom = c.tom;
+
+    int const N = g.nx * g.nz;
+    int const tom_cell = g.cell_of(tom.position);
+    int const jerry_cell = g.cell_of(jerry.position);
+    float const vt = tom.speed;
+    float const vj = jerry.speed;
+    bool const locked = c.cooldown > 0.0f;
+    bool const tom_close = norm(tom.position - jerry.position) < p.danger_distance;
+
+    if (c.jerry_goal >= 0 && norm(c.jerry_goal_pos - jerry.position) < 0.3f)
+        c.jerry_goal = -1;
+
+    // Time map of Tom (holes are forbidden)
+    nav_search_result const from_tom = nav_search(g, tom_cell, -1, false);
+
+    auto is_locked_hole = [&](int cell) { return locked && g.hole_id[cell] == c.hole_last; };
+
+    // A cell is safe if Jerry gets there clearly before Tom
+    auto safe = [&](int cell, float d) {
+        if (is_locked_hole(cell))
+            return false;
+        return d / vj + p.safety_time < from_tom.dist[cell] / vt;
+    };
+
+    // Goal score: far from Tom, not too far from Jerry, bonus for holes
+    auto score = [&](nav_search_result const& r, int cell) {
+        float s = std::min(from_tom.dist[cell], p.far_distance) - 0.25f * r.dist[cell];
+        if (g.hole_id[cell] >= 0)
+            s += tom_close ? p.hole_bonus_danger : p.hole_bonus;
+        return s;
+    };
+
+    auto pick = [&](nav_search_result const& r, float& best) {
+        int best_cell = -1;
+        best = -INF;
+
+        for (int k = 0; k < N; k++) {
+            // Skip invalid cells
+            if (k == jerry_cell || r.dist[k] >= 1e29f || is_locked_hole(k))
+                continue;
+
+            // Fix horrible edge case (Jerry's trajectory shakes)
+            // The goal has to be far enough away
+            if (g.hole_id[k] < 0 && r.dist[k] < 1.0f)
+                continue;
+
+            float const s = score(r, k);
+
+            if (s > best) {
+                best = s;
+                best_cell = k;
+            }
+        }
+
+        return best_cell;
+    };
+
+    // Dijkstra from Jerry restricted to safe cells: every reached cell has a safe path
+    nav_search_result from_jerry = nav_search(g, jerry_cell, -1, true, safe);
+    float best_score = -INF;
+    int goal = pick(from_jerry, best_score);
+
+    // Panic mode: no safe cell, relax the safety constraint
+    if (goal < 0) {
+        from_jerry = nav_search(g, jerry_cell, -1, true, [&](int cell, float) { return !is_locked_hole(cell); });
+        goal = pick(from_jerry, best_score);
+    }
+    if (goal < 0) {
+        clear_path(jerry);
+        c.jerry_goal = -1;
+        return;
+    }
+
+    // Hysteresis: keep the previous goal unless the new one is clearly better
+    if (c.jerry_goal >= 0 && c.jerry_goal != goal && from_jerry.dist[c.jerry_goal] < 1e29f) {
+        if (score(from_jerry, c.jerry_goal) + p.goal_hysteresis >= best_score)
+            goal = c.jerry_goal;
+    }
+
+    std::vector<vec2> raw = nav_extract_path(g, from_jerry, goal);
+    if (raw.empty()) {
+        clear_path(jerry);
+        c.jerry_goal = -1;
+        return;
+    }
+    raw[0] = jerry.position;
+    set_path(jerry, raw, nav_smooth_path(g, raw, true));
+    c.jerry_goal = goal;
+    c.jerry_goal_pos = g.cell_center(goal);
 }
 
 void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
 {
-    // TODO: implement
+    chase_parameters const& p = c.param;
+    agent_structure& jerry = c.jerry;
+
+    if (c.state == jerry_state::hidden) {
+        c.hidden_timer -= dt;
+        if (c.hidden_timer > 0.0f)
+            return;
+
+        // Reappear from the hole farthest from Tom (other than the one he entered)
+        int best = -1;
+        float best_d = -1.0f;
+
+        for (int h = 0; h < int(g.hole_exit.size()); ++h) {
+            if (h == c.hole_current)
+                continue;
+
+            float const d = norm(g.hole_exit[h] - c.tom.position);
+            if (d > best_d) {
+                best_d = d;
+                best = h;
+            }
+        }
+
+        if (best < 0)
+            best = c.hole_current;
+
+        jerry.position = g.hole_exit[best];
+        vec2 const dir = g.hole_exit[best] - g.hole_center[best];
+
+        if (norm(dir) > 1e-4f)
+            jerry.angle = std::atan2(dir.x, dir.y);
+
+        jerry.visible = true;
+        c.state = jerry_state::running;
+        c.hole_last = best;
+        c.hole_current = -1;
+        c.cooldown = p.hole_cooldown;
+        c.jerry_goal = -1;
+        c.replan_timer_jerry = 0.0f;
+        clear_path(jerry);
+        return;
+    }
+
+    // Enter a hole if Jerry stands on a hole cell
+    int const h = g.hole_id[g.cell_of(jerry.position)];
+    if (h >= 0 && !(c.cooldown > 0.0f && h == c.hole_last)) {
+        c.state = jerry_state::hidden;
+        c.hidden_timer = p.hidden_duration;
+        c.hole_current = h;
+        jerry.visible = false;
+        jerry.moving = false;
+        c.jerry_goal = -1;
+        clear_path(jerry);
+        return;
+    }
+
+    c.replan_timer_jerry -= dt;
+    if (c.replan_timer_jerry <= 0.0f) {
+        c.replan_timer_jerry = p.replan_period;
+        jerry_replan(c, g);
+    }
+    agent_advance(jerry, dt, 1.0f);
 }
 
 void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
@@ -169,7 +321,7 @@ void chase_update(chase_structure& c, nav_grid_structure const& g, float dt)
     c.jerry.speed = c.param.jerry_speed;
     c.cooldown = std::max(0.0f, c.cooldown - dt);
 
-    // update_jerry(c, g, dt);
+    update_jerry(c, g, dt);
     update_tom(c, g, dt);
 }
 

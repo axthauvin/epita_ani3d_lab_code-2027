@@ -28,7 +28,7 @@ void scene_structure::initialize() {
   initialize_house(house, holes, hole_boxes, house_collision_meshes);
   nav_build_parameters nav_param;
   nav_grid_build(nav_grid, house_collision_meshes, hole_boxes, nav_param);
-  chase_debug_initialize(chase_debug, nav_grid); // TODO: tempo
+  chase_debug_initialize(chase_debug, nav_grid);
 
   std::cout << "- Load Jerry character" << std::endl;
   characters["Jerry"] = load_character_jerry();
@@ -181,7 +181,8 @@ void scene_structure::display_frame() {
     }
   }
 
-  chase_debug_draw(chase_debug, chase, nav_grid, environment, gui.display_nav_grid, gui.display_nav_free, gui.display_paths && gui.chase_active);
+  chase_debug_draw(chase_debug, chase, nav_grid, environment, gui.display_nav_grid,
+                   gui.display_nav_free, gui.display_paths && gui.chase_active);
 }
 
 void scene_structure::display_gui() {
@@ -231,7 +232,7 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Paths", &gui.display_paths);
   ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
-  // TODO: add catch gap
+  ImGui::SliderFloat("Catch gap", &chase.param.catch_gap, 0.1f, 2.0f);
   ImGui::Unindent();
 
   // Handle start of walk in setting the current animation to Idle

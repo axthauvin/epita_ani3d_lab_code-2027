@@ -9,15 +9,13 @@ using namespace cgp;
 
 float const house_scale = 0.2f;
 
-void initialize_ground(mesh_drawable &ground);
 void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes);
 
 void scene_structure::initialize() {
-  camera_control.initialize(inputs,
-                            window); // Give access to the inputs and window
-                                     // global state to the camera controler
+// Give access to the inputs and window global state to the camera controler
+  camera_control.initialize(inputs, window);
   camera_control.set_rotation_axis_y();
   camera_control.look_at({4.0f, 3.0f, 3.0f}, {0, 0, 0}, {0, 0, 1});
   global_frame.initialize_data_on_gpu(mesh_primitive_frame());
@@ -26,22 +24,13 @@ void scene_structure::initialize() {
   sphere_ik.model.scaling = 0.05f;
   sphere_ik.material.color = {1, 0, 0};
 
-  initialize_ground(ground);
-
   std::cout << "- Load house" << std::endl;
   initialize_house(house, holes, hole_boxes, house_collision_meshes);
-
-  // std::cout << "- Load Lola character" << std::endl;
-  // characters["Lola"] = load_character_lola();
-  //
-  // characters["Lola2"] = load_character_lola();
-  // characters["Lola2"].set_current_animation("Dance4");
-  // characters["Lola2"].animated_model.apply_transformation(
-  //     {-0.5f, 0, 2}, rotation_axis_angle({0, 1, 0}, Pi));
-  //
-  // std::cout << "- Load Maria-sword character" << std::endl;
-  // characters["Maria-sword"] = load_character_maria_sword();
-  // characters["Maria-sword"].animated_model.apply_transformation({-2, 0, 0});
+  nav_build_parameters nav_param;
+  nav_grid_build(nav_grid, house_collision_meshes, hole_boxes, nav_param);
+  chase_debug_initialize(chase_debug, nav_grid);
+  // TODO: remove debug
+  // std::cout << "Grid " << nav_grid.nx << " x " << nav_grid.nz << ", floor_y = " << nav_grid.floor_y << std::endl;
 
   std::cout << "- Load Jerry character" << std::endl;
   characters["Jerry"] = load_character_jerry();
@@ -66,9 +55,6 @@ void scene_structure::display_frame() {
 
   if (gui.display_frame)
     draw(global_frame, environment);
-
-  if (gui.display_ground)
-    draw(ground, environment);
 
   if (gui.display_house)
     for (auto &mesh : house)
@@ -184,13 +170,13 @@ void scene_structure::display_frame() {
       draw(character.sk_drawable, environment);
     }
   }
+
+  chase_debug_draw(chase_debug, chase, nav_grid, environment, gui.display_nav_grid, gui.display_nav_free, gui.display_paths && gui.chase_active);
 }
 
 void scene_structure::display_gui() {
   // General display functions
   ImGui::Checkbox("Global Frame", &gui.display_frame);
-  ImGui::SameLine();
-  ImGui::Checkbox("Ground", &gui.display_ground);
   ImGui::SameLine();
   ImGui::Checkbox("House", &gui.display_house);
   ImGui::Checkbox("Wireframe", &gui.display_wireframe);
@@ -220,6 +206,22 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Head", &gui.rotate_head_effect_active);
   ImGui::SameLine();
   bool is_ik_clicked = ImGui::Checkbox("IK", &effect_ik.active);
+  ImGui::Unindent();
+
+  // Chase
+  ImGui::Separator();
+  ImGui::Text("Chase: ");
+  ImGui::Indent();
+  if (ImGui::Checkbox("Run chase", &gui.chase_active) && gui.chase_active)
+    chase_initialize(chase, nav_grid);
+  ImGui::Checkbox("Grid", &gui.display_nav_grid);
+  ImGui::SameLine();
+  ImGui::Checkbox("Free cells", &gui.display_nav_free);
+  // ImGui::SameLine();
+  // TODO: checkbox display paths
+  ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
+  ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
+  // TODO: add catch gap
   ImGui::Unindent();
 
   // Handle start of walk in setting the current animation to Idle
@@ -373,20 +375,6 @@ void scene_structure::keyboard_event() {
   }
 }
 void scene_structure::idle_frame() { camera_control.idle_frame(); }
-
-void initialize_ground(mesh_drawable &ground) {
-  mesh ground_mesh = mesh_primitive_quadrangle();
-  ground_mesh.translate({-0.5f, -0.5f, 0.0f});
-  ground_mesh.rotate({1, 0, 0}, -Pi / 2.0f);
-  ground_mesh.translate({0.0f, 0.0f, -0.05f});
-  ground_mesh.scale(15.0f);
-  ground_mesh.uv *= 5.0f;
-
-  ground.initialize_data_on_gpu(ground_mesh);
-  ground.texture.load_and_initialize_texture_2d_on_gpu(
-      project::path + "assets/texture_wood.jpg", GL_REPEAT, GL_REPEAT);
-  ground.material.phong = {1, 0, 0, 1};
-}
 
 void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,

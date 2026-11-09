@@ -285,5 +285,3 @@ void effect_ik_compute(effect_ik_structure const& effect_ik, skeleton_structure&
 	 *      
 	 */
 }
-
-

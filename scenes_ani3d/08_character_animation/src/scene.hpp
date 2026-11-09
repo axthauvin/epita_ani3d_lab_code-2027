@@ -6,6 +6,8 @@
 
 #include "animated_character/animated_character.hpp"
 #include "effects/effects.hpp"
+#include "navigation/chase.hpp"
+#include "navigation/chase_debug.hpp"
 
 
 using cgp::mesh_drawable;
@@ -15,7 +17,6 @@ struct gui_parameters {
 	bool display_frame = false;
 	bool display_wireframe = false;
 	bool display_surface = true;
-	bool display_ground = false;
 	bool display_house = true;
 	bool display_texture = true;
 	bool display_skeleton = true;
@@ -23,16 +24,12 @@ struct gui_parameters {
 	bool display_skeleton_joint_frame = false;
 	bool display_skeleton_bone = true;
 	bool rotate_head_effect_active = false;
+	// Chase params
 	bool chase_active = false;
 	bool display_nav_grid = false;
 	bool display_nav_free = false;
 	bool display_paths = true;
 };
-
-
-
-
-
 
 
 // The structure of the custom scene
@@ -67,10 +64,15 @@ struct scene_structure : cgp::scene_inputs_generic {
 	mesh_drawable ground;
 	std::vector<mesh_drawable> house; // One drawable per material of the house
 
+	// Split house meshes into two classes: collision & holes meshes
 	std::vector<cgp::vec3> holes;
 	std::vector<std::pair<cgp::vec3, cgp::vec3>> hole_boxes;
 	std::vector<cgp::mesh> house_collision_meshes;
 
+	// Occupation grid and debugging
+	nav_grid_structure nav_grid;
+	chase_structure chase;
+	chase_debug_structure chase_debug;
 
 	// ****************************** //
 	// Functions
@@ -80,15 +82,9 @@ struct scene_structure : cgp::scene_inputs_generic {
 	void display_frame(); // The frame display to be called within the animation loop
 	void display_gui();   // The display of the GUI, also called within the animation loop
 
-
 	void mouse_move_event();
 	void mouse_click_event();
 	void keyboard_event();
 	void idle_frame();
 
 };
-
-
-
-
-

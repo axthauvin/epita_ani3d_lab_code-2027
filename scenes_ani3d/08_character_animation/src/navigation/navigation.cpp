@@ -6,7 +6,7 @@ using namespace cgp;
 
 namespace {
 
-float const INF = 1e30f;
+float constexpr INF = 1e30f;
 
 float dist_point_segment(vec2 const& p, vec2 const& a, vec2 const& b)
 {

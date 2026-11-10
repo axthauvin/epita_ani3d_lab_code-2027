@@ -4,7 +4,7 @@ using namespace cgp;
 
 namespace {
 
-float const INF = 1e30f;
+float constexpr INF = 1e30f;
 
 void set_path(agent_structure& a, std::vector<vec2> const& raw, std::vector<vec2> const& smooth)
 {

@@ -7,7 +7,8 @@
 
 using namespace cgp;
 
-float const house_scale = 0.2f;
+float constexpr house_scale = 0.2f;
+int constexpr mixamo_head_index = 10;
 
 void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
@@ -126,9 +127,17 @@ void scene_structure::display_frame() {
   if (gui.rotate_head_effect_active) {
     for (auto &entry_character : characters) {
       effect_rotate_head_toward_objective_position(
-          entry_character.second.animated_model.skeleton, 10,
+          entry_character.second.animated_model.skeleton, mixamo_head_index ,
           camera_control.camera_model.position());
     }
+  }
+  // Tom looks at Jerry
+  // else if (gui.chase_active && chase.jerry.visible) // when Jerry is visible or not?
+  // If not, Tom looks at the hole jerry just entered.
+  else if (gui.chase_active) {
+    skeleton_structure &tom_skeleton = characters["Tom"].animated_model.skeleton;
+    vec3 const jerry_position(chase.jerry.position.x, nav_grid.floor_y + 0.1f, chase.jerry.position.y);
+    effect_rotate_head_toward_objective_position(tom_skeleton, mixamo_head_index, jerry_position);
   }
 
   // ********************************** //

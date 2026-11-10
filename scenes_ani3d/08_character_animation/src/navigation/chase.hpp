@@ -2,6 +2,8 @@
 
 #include "cgp/cgp.hpp"
 
+#include <random>
+
 #include "../effects/effects.hpp"
 #include "navigation.hpp"
 
@@ -22,18 +24,22 @@ struct agent_structure {
 };
 
 struct chase_parameters {
-    float tom_speed = 4.0f;
-    float jerry_speed = 4.15f;
+    float tom_speed = 3.0f;
+    float jerry_speed = 4.0f;
+
     float catch_gap = 0.5f;             // Tom never gets closer than this to Jerry
-    float replan_period = 0.3f;
+    float replan_period = 0.2f;
     float safety_time = 0.3f;           // Jerry must reach a cell this much earlier than Tom
-    float hidden_duration = 2.0f;       // time spent inside the hole
-    float hole_cooldown = 3.0f;         // Jerry cannot re-enter the hole he just left
-    float hole_bonus = 3.0f;
-    float hole_bonus_danger = 6.0f;     // bonus when Tom is close
-    float danger_distance = 4.0f;
-    float far_distance = 12.0f;         // cap of Tom's distance in the goal score
-    float goal_hysteresis = 1.0f;
+
+    float hidden_duration = 5.0f;       // time spent inside the hole
+    float hole_cooldown = 15.0f;         // Jerry cannot re-enter the hole he just left
+
+    float danger_distance = 3.0f;
+    float far_distance = 6.0f;         // cap of Tom's distance in the goal score
+
+    float far_weight = 0.8f;            // less obsession with being far from Tom
+    float explore_weight = 7.0f;        // bonus for areas not visited recently
+    float explore_cap = 40.0f;          // seconds after which an area counts as fully "unseen"
 };
 
 enum class jerry_state { running, hidden };
@@ -44,14 +50,19 @@ struct chase_structure {
     chase_parameters param;
 
     jerry_state state = jerry_state::running;
+
     float replan_timer_tom = 0.0f;
-    float replan_timer_jerry = 0.15f;
+    float replan_timer_jerry = 0.0f;
+
     float hidden_timer = 0.0f;
     float cooldown = 0.0f;
-    int hole_current = -1; // hole Jerry is currently inside
-    int hole_last = -1;    // hole Jerry just left
+    int hole_current = -1;                      // hole Jerry is currently inside
+    int hole_last = -1;                         // hole Jerry just left
     int jerry_goal = -1;
     cgp::vec2 jerry_goal_pos = {0.0f, 0.0f};
+
+    float time = 0.0f;
+    std::vector<float> last_visit;              // last time Jerry was near each cell
 };
 
 // Reset positions and state

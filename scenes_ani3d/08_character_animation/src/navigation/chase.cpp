@@ -118,13 +118,20 @@ void jerry_replan(chase_structure& c, nav_grid_structure const& g)
     float const vt = tom.speed;
     float const vj = jerry.speed;
     bool const locked = c.cooldown > 0.0f;
-    bool const tom_close = norm(tom.position - jerry.position) < p.danger_distance;
 
     if (c.jerry_goal >= 0 && norm(c.jerry_goal_pos - jerry.position) < 0.3f)
         c.jerry_goal = -1;
 
     // Time map of Tom (holes are forbidden)
     nav_search_result const from_tom = nav_search(g, tom_cell, -1, false);
+
+    // Remember the area around Jerry as visited
+    int const R = std::max(1, int(1.0f / g.cell_size));
+    int const ji = jerry_cell % g.nx, jj = jerry_cell / g.nx;
+    for (int dj = -R; dj <= R; dj++)
+        for (int di = -R; di <= R; di++)
+            if (g.inside(ji + di, jj + dj))
+                c.last_visit[g.index(ji + di, jj + dj)] = c.time;
 
     auto is_locked_hole = [&](int cell) { return locked && g.hole_id[cell] == c.hole_last; };
 
@@ -137,9 +144,9 @@ void jerry_replan(chase_structure& c, nav_grid_structure const& g)
 
     // Goal score: far from Tom, not too far from Jerry, bonus for holes
     auto score = [&](nav_search_result const& r, int cell) {
-        float s = std::min(from_tom.dist[cell], p.far_distance) - 0.25f * r.dist[cell];
-        if (g.hole_id[cell] >= 0)
-            s += tom_close ? p.hole_bonus_danger : p.hole_bonus;
+        float s = p.far_weight * std::min(from_tom.dist[cell], p.far_distance) - 0.25f * r.dist[cell];
+        // For exploration, favor places not visited for a long time
+        s += p.explore_weight * std::min(c.time - c.last_visit[cell], p.explore_cap) / p.explore_cap;
         return s;
     };
 
@@ -182,12 +189,6 @@ void jerry_replan(chase_structure& c, nav_grid_structure const& g)
         clear_path(jerry);
         c.jerry_goal = -1;
         return;
-    }
-
-    // Hysteresis: keep the previous goal unless the new one is clearly better
-    if (c.jerry_goal >= 0 && c.jerry_goal != goal && from_jerry.dist[c.jerry_goal] < 1e29f) {
-        if (score(from_jerry, c.jerry_goal) + p.goal_hysteresis >= best_score)
-            goal = c.jerry_goal;
     }
 
     std::vector<vec2> raw = nav_extract_path(g, from_jerry, goal);
@@ -312,6 +313,8 @@ void chase_initialize(chase_structure& c, nav_grid_structure const& g)
     c.tom.position = tom_start;
     c.tom.speed = param.tom_speed;
     c.jerry.speed = param.jerry_speed;
+
+    c.last_visit.assign(g.nx * g.nz, -c.param.explore_cap);
 }
 
 void chase_update(chase_structure& c, nav_grid_structure const& g, float dt)
@@ -320,6 +323,7 @@ void chase_update(chase_structure& c, nav_grid_structure const& g, float dt)
     c.tom.speed = c.param.tom_speed;
     c.jerry.speed = c.param.jerry_speed;
     c.cooldown = std::max(0.0f, c.cooldown - dt);
+    c.time += dt;
 
     update_jerry(c, g, dt);
     update_tom(c, g, dt);

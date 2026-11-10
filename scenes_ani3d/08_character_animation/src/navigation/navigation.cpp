@@ -238,9 +238,33 @@ void nav_grid_build(nav_grid_structure& g,
             }
         }
 
-        // We assume the hole is directly connected to the map without any obstacles.
+        // Connect the hole to the map.
+        // Carve a line towards the nearest free cell (which is not a holl).
+        g.hole_exit[h] = g.hole_center[h];
         int const exit_cell = nav_nearest_free_cell(g, g.hole_center[h], false);
-        g.hole_exit[h] = g.cell_center(exit_cell);
+
+        if (exit_cell < 0)
+            continue; // no exit found
+
+        vec2 const start = g.hole_center[h];
+        vec2 const target = g.cell_center(exit_cell);
+        int const n = std::max(1, int(std::ceil(norm(target - start) / (0.5f * g.cell_size))));
+        g.hole_exit[h] = target;
+
+        for (int s = 0; s <= n; s++)
+        {
+            vec2 const p = start + (target - start) * (float(s) / float(n));
+            int const k = g.cell_of(p);
+
+            if (g.blocked[k]) {
+                g.blocked[k] = 0;
+                g.hole_id[k] = h;
+            }
+            else if (g.hole_id[k] < 0) {
+                g.hole_exit[h] = g.cell_center(k);
+                break;
+            }
+        }
     }
 }
 
@@ -313,6 +337,7 @@ nav_search_result nav_search(nav_grid_structure const& g, int start, int goal, b
             }
         }
     }
+
     return res;
 }
 

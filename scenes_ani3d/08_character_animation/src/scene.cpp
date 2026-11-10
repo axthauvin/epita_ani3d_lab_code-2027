@@ -148,6 +148,8 @@ void scene_structure::display_frame() {
   // ************************************** //
   for (auto &entry_character : characters) {
     character_structure &character = entry_character.second;
+    if (gui.chase_active && entry_character.first == "Jerry" && !chase.jerry.visible)
+      continue;
     animated_model_structure &animated_model =
         entry_character.second.animated_model;
 

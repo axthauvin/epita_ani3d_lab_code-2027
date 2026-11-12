@@ -299,14 +299,23 @@ void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
     tom.moving = false;
 
     // Scripted sequence after Jerry entered the hole: fall, stand up, look around
-    if (c.phase == tom_phase::falling || c.phase == tom_phase::standing_up || c.phase == tom_phase::looking) {
+    if (c.phase == tom_phase::falling || c.phase == tom_phase::lying
+        || c.phase == tom_phase::standing_up || c.phase == tom_phase::looking) {
         c.phase_timer += dt;
 
         if (c.phase == tom_phase::falling) {
             tom.anim = p.anim_fall;
 
             // Start the blend toward StandUp slightly before Death ends
-            if (c.phase_timer >= p.fall_duration - 1.2f * p.blend_time) {
+            if (c.phase_timer >= p.fall_duration) {
+                c.phase = tom_phase::lying;
+                c.phase_timer = 0.0f;
+            }
+        }
+        else if (c.phase == tom_phase::lying) {
+            tom.anim = p.anim_fall; // keep the last pose of Death
+
+            if (c.phase_timer >= p.lying_duration) {
                 c.phase = tom_phase::standing_up;
                 c.phase_timer = 0.0f;
             }
@@ -413,4 +422,11 @@ void chase_apply(chase_structure& c, nav_grid_structure const& g, character_stru
 {
     place_character(tom, c.tom, g.floor_y);
     place_character(jerry, c.jerry, g.floor_y);
+
+    // Freeze the Death animation on its last pose while Tom lies on the ground
+    // Maybe there is a better place to do this...
+    if (c.phase == tom_phase::lying) {
+        tom.timer.scale = 0.0f;
+        tom.timer.t_periodic = std::max(0.0f, tom.timer.event_period - 0.02f);
+    }
 }

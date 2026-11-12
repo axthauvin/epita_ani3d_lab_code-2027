@@ -75,8 +75,6 @@ void effect_transition_compute(effect_transition_structure& effect_transition, c
 	 */
 
 	float const alpha = clamp(alpha_completion, 0.0f, 1.0f); // just to be sure
-	// TODO: remove debug
-	// std::cout << "alpha: " << alpha << std::endl;
 	int const N = model.skeleton.size();
 
 	for (int k = 0; k < N; k++)

@@ -21,28 +21,43 @@ struct agent_structure {
     std::vector<cgp::vec2> path_raw;    // raw A* cells
     size_t path_index = 0;
     int path_version = 0;               // incremented at each path change (debug refresh)
+
+    // Animations
+    std::string anim;
 };
 
 struct chase_parameters {
     float tom_speed = 3.0f;
     float jerry_speed = 4.0f;
 
-    float catch_gap = 0.5f;             // Tom never gets closer than this to Jerry
+    float catch_gap = 0.5f;         // Tom never gets closer than this to Jerry
     float replan_period = 0.2f;
-    float safety_time = 0.3f;           // Jerry must reach a cell this much earlier than Tom
+    float safety_time = 0.3f;       // Jerry must reach a cell this much earlier than Tom
 
-    float hidden_duration = 5.0f;       // time spent inside the hole
-    float hole_cooldown = 15.0f;         // Jerry cannot re-enter the hole he just left
+    float hidden_duration = 5.0f;   // time spent inside the hole
+    float hole_cooldown = 15.0f;    // Jerry cannot re-enter the hole he just left
 
     float danger_distance = 3.0f;
-    float far_distance = 6.0f;         // cap of Tom's distance in the goal score
+    float far_distance = 6.0f;      // cap of Tom's distance in the goal score
 
-    float far_weight = 0.8f;            // less obsession with being far from Tom
-    float explore_weight = 7.0f;        // bonus for areas not visited recently
-    float explore_cap = 40.0f;          // seconds after which an area counts as fully "unseen"
+    float far_weight = 0.8f;        // less obsession with being far from Tom
+    float explore_weight = 7.0f;    // bonus for areas not visited recently
+    float explore_cap = 40.0f;      // seconds after which an area counts as fully "unseen"
+
+    std::string anim_run = "Walk";
+    std::string anim_dance = "Shuffling";
+    std::string anim_fall = "Death";
+    std::string anim_standup = "StandUp";
+    std::string anim_look = "Looking";
+    float fall_duration = 2.0f;         // overwritten from the Death animation length
+    float standup_duration = 2.0f;      // overwritten from the StandUp animation length
+    float looking_duration = 4.0f;
+    float dance_distance = 6.0f;        // Jerry dances when Tom is farther than this
+    float hidden_timeout = 25.0f;       // safety: Jerry leaves the hole after this time anyway
 };
 
 enum class jerry_state { running, hidden };
+enum class tom_phase { chasing, to_hole, falling, standing_up, looking };
 
 struct chase_structure {
     agent_structure tom;
@@ -63,6 +78,11 @@ struct chase_structure {
 
     float time = 0.0f;
     std::vector<float> last_visit;              // last time Jerry was near each cell
+
+    tom_phase phase = tom_phase::chasing;
+    float phase_timer = 0.0f;
+    bool jerry_dancing = false;
+    float hidden_elapsed = 0.0f;
 };
 
 // Reset positions and state

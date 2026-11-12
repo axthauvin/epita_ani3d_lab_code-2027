@@ -39,6 +39,15 @@ void scene_structure::initialize() {
   characters["Tom"] = load_character_tom();
   characters["Tom"].animated_model.apply_transformation({1.5f, 0, 0});
 
+  for (std::string name : {"Tom", "Jerry"}) {
+    // Set walk animation otherwise the first animation in alphabetical order is used
+    characters[name].set_current_animation("Walk");
+    effect_transition[name].transition_time = 0.3f;
+  }
+
+  chase.param.fall_duration = characters["Tom"].animated_model.animation.at("Death").time_max;
+  chase.param.standup_duration = characters["Tom"].animated_model.animation.at("StandUp").time_max;
+
   chase_initialize(chase, nav_grid);
 
   current_active_character = "Tom";
@@ -89,12 +98,22 @@ void scene_structure::display_frame() {
   // Chasing
   if (gui.chase_active) {
     chase_update(chase, nav_grid, inputs.time_interval);
-    chase_apply(chase, nav_grid, characters["Tom"], characters["Jerry"]);
-  } else {
-    characters["Tom"].timer.scale = 1.0f;
-    characters["Jerry"].timer.scale = 1.0f;
-  }
 
+    // Start a smooth transition when the requested animation changes
+    auto request_animation = [&](std::string const &name, std::string const &anim) {
+      character_structure &ch = characters[name];
+
+      if (ch.current_animation_name == anim || ch.animated_model.animation.count(anim) == 0)
+        return;
+
+      effect_transition_start(effect_transition[name], ch, anim);
+    };
+
+    request_animation("Tom", chase.tom.anim);
+    request_animation("Jerry", chase.jerry.anim);
+
+    chase_apply(chase, nav_grid, characters["Tom"], characters["Jerry"]);
+  }
 
   // ********************************** //
   // Apply effects on the skeleton
@@ -337,13 +356,9 @@ void scene_structure::display_gui() {
 
     // Timers associated to the character
     ImGui::Indent();
-    std::string time_scale_txt = "Time scale##" + name;
     std::string transition_time_txt = "Transition time##" + name;
-    ImGui::SliderFloat(time_scale_txt.c_str(), &character.timer.scale, 0.0f,
-                       2.0f);
     ImGui::SliderFloat(transition_time_txt.c_str(),
                        &effect_transition[name].transition_time, 0.1f, 5.0f);
-
     std::string local_time_txt = "Anim cycle time##" + name;
     ImGui::SliderFloat(local_time_txt.c_str(), &character.timer.t_periodic,
                        0.0f, character.timer.event_period);

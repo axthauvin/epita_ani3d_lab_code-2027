@@ -210,7 +210,9 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
 
     if (c.state == jerry_state::hidden) {
         c.hidden_timer -= dt;
-        if (c.hidden_timer > 0.0f)
+        c.hidden_elapsed += dt;
+        bool const tom_done = (c.phase == tom_phase::looking && c.phase_timer >= p.looking_duration);
+        if (c.hidden_timer > 0.0f || !(tom_done || c.hidden_elapsed > p.hidden_timeout))
             return;
 
         // Reappear from the hole farthest from Tom (other than the one he entered)
@@ -244,6 +246,10 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
         c.cooldown = p.hole_cooldown;
         c.jerry_goal = -1;
         c.replan_timer_jerry = 0.0f;
+        c.phase = tom_phase::chasing;
+        c.phase_timer = 0.0f;
+        c.replan_timer_tom = 0.0f;
+        c.jerry_dancing = false;
         clear_path(jerry);
         return;
     }
@@ -257,7 +263,24 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
         jerry.visible = false;
         jerry.moving = false;
         c.jerry_goal = -1;
+        c.hidden_elapsed = 0.0f;
+        c.jerry_dancing = false;
         clear_path(jerry);
+        return;
+    }
+
+    // Jerry dances while Tom is far
+    float const d_tom = norm(c.tom.position - jerry.position);
+
+    if (!c.jerry_dancing && d_tom > p.dance_distance)
+        c.jerry_dancing = true;
+    else if (c.jerry_dancing && d_tom < 0.7f * p.dance_distance) // with hystereris
+        c.jerry_dancing = false;
+
+    jerry.anim = c.jerry_dancing ? p.anim_dance : p.anim_run;
+
+    if (c.jerry_dancing) {
+        jerry.moving = false;
         return;
     }
 
@@ -271,18 +294,70 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
 
 void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
 {
+    chase_parameters const& p = c.param;
+    agent_structure& tom = c.tom;
+    tom.moving = false;
+
+    // Scripted sequence after Jerry entered the hole: fall, stand up, look around
+    if (c.phase == tom_phase::falling || c.phase == tom_phase::standing_up || c.phase == tom_phase::looking) {
+        c.phase_timer += dt;
+
+        if (c.phase == tom_phase::falling) {
+            tom.anim = p.anim_fall;
+
+            if (c.phase_timer >= p.fall_duration) {
+                c.phase = tom_phase::standing_up;
+                c.phase_timer = 0.0f;
+            }
+        }
+        else if (c.phase == tom_phase::standing_up) {
+            tom.anim = p.anim_standup;
+
+            if (c.phase_timer >= p.standup_duration) {
+                c.phase = tom_phase::looking;
+                c.phase_timer = 0.0f;
+            }
+        }
+        else
+            tom.anim = p.anim_look;
+
+        return;
+    }
+
+    // Jerry just disappeared: Tom runs to the hole entrance
+    if (c.phase == tom_phase::chasing && !c.jerry.visible) {
+        c.phase = tom_phase::to_hole;
+        c.replan_timer_tom = 0.0f;
+    }
+
+    // Assign the animation
+    tom.anim = p.anim_run;
+
+    // Replan Tom path
     c.replan_timer_tom -= dt;
     if (c.replan_timer_tom <= 0.0f) {
-        c.replan_timer_tom = c.param.replan_period;
+        c.replan_timer_tom = p.replan_period;
         tom_replan(c, g);
     }
 
-    // Tom can never catch Jerry: he stops when too close
+    // Move Tom
     float speed_scale = 1.0f;
-    if (c.jerry.visible && norm(c.tom.position - c.jerry.position) < c.param.catch_gap)
+    if (c.jerry.visible && norm(tom.position - c.jerry.position) < p.catch_gap)
         speed_scale = 0.0f;
+    agent_advance(tom, dt, speed_scale);
 
-    agent_advance(c.tom, dt, speed_scale);
+    // Arrived at the hole: face the wall and fall
+    if (c.phase == tom_phase::to_hole && c.hole_current >= 0 && tom.path_index >= tom.path.size()
+        && norm(tom.position - g.hole_exit[c.hole_current]) < 0.3f) {
+        vec2 const dir = g.hole_center[c.hole_current] - tom.position;
+
+        if (norm(dir) > 1e-4f)
+            tom.angle = std::atan2(dir.x, dir.y);
+
+        c.phase = tom_phase::falling;
+        c.phase_timer = 0.0f;
+        tom.moving = false;
+    }
 }
 
 void place_character(character_structure& character, agent_structure const& a, float floor_y)
@@ -315,6 +390,9 @@ void chase_initialize(chase_structure& c, nav_grid_structure const& g)
     c.jerry.speed = param.jerry_speed;
 
     c.last_visit.assign(g.nx * g.nz, -c.param.explore_cap);
+
+    c.tom.anim = param.anim_run;
+    c.jerry.anim = param.anim_run;
 }
 
 void chase_update(chase_structure& c, nav_grid_structure const& g, float dt)
@@ -333,8 +411,4 @@ void chase_apply(chase_structure& c, nav_grid_structure const& g, character_stru
 {
     place_character(tom, c.tom, g.floor_y);
     place_character(jerry, c.jerry, g.floor_y);
-
-    // Freeze the run cycle when the agent does not move
-    tom.timer.scale = c.tom.moving ? 1.0f : 0.0f;
-    jerry.timer.scale = c.jerry.moving ? 1.0f : 0.0f;
 }

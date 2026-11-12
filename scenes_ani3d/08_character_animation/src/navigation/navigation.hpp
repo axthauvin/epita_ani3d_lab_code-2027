@@ -59,7 +59,6 @@ struct nav_build_parameters {
     float cell_size = 0.1f;
     float height_min = 0.2f;    // obstacles lower than floor_y + height_min are ignored
     float height_max = 2.0f;    // obstacles higher than floor_y + height_max are ignored
-    // TODO: margin to adjust
     float margin = 0.25f;        // distance to obstacles (radius of the characters)
 };
 

@@ -57,5 +57,5 @@ void effect_walking(effect_walking_structure& effect_walking, character_structur
 // Change of animation when we press or release the UP key during a walk effect
 void effect_walking_keyboard_event(effect_transition_structure& effect_transition, character_structure& character, cgp::input_devices const& inputs, effect_walking_structure const& effect_walking);
 
-// TODO: documentation
+// Move the character skeleton root
 void effect_place_root(skeleton_structure& skeleton, cgp::vec3 const& position, float angle);

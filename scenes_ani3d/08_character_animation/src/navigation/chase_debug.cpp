@@ -86,7 +86,6 @@ void chase_debug_initialize(chase_debug_structure& d, nav_grid_structure const& 
     d.marker.material.phong = {1, 0, 0, 1};
 }
 
-// TODO: show_paths
 void chase_debug_draw(chase_debug_structure& d, chase_structure const& c, nav_grid_structure const& g,
                       environment_generic_structure const& environment,
                       bool show_grid, bool show_free_cells, bool show_paths)
@@ -101,6 +100,9 @@ void chase_debug_draw(chase_debug_structure& d, chase_structure const& c, nav_gr
         if (show_free_cells && d.grid_free.valid)
             draw(d.grid_free.drawable, environment);
     }
+
+    if (!show_paths)
+        return;
 
     refresh_curves(d.tom_path, d.tom_raw, c.tom, g.floor_y, {1.0f, 0.0f, 0.0f}, {1.0f, 0.6f, 0.0f});
     refresh_curves(d.jerry_path, d.jerry_raw, c.jerry, g.floor_y, {0.0f, 0.7f, 0.0f}, {0.9f, 0.9f, 0.0f});

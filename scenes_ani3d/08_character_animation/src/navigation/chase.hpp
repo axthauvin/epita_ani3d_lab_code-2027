@@ -51,9 +51,10 @@ struct chase_parameters {
     std::string anim_look = "Looking";
     float fall_duration = 2.0f;         // overwritten from the Death animation length
     float standup_duration = 2.0f;      // overwritten from the StandUp animation length
-    float looking_duration = 4.0f;
+    float looking_duration = 6.0f;
     float dance_distance = 6.0f;        // Jerry dances when Tom is farther than this
     float hidden_timeout = 25.0f;       // safety: Jerry leaves the hole after this time anyway
+    float blend_time = 0.3f;
 };
 
 enum class jerry_state { running, hidden };

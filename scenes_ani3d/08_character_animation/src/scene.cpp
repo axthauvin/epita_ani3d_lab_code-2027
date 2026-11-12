@@ -103,6 +103,10 @@ void scene_structure::display_frame() {
     auto request_animation = [&](std::string const &name, std::string const &anim) {
       character_structure &ch = characters[name];
 
+      // Wait for the end of the running transition
+      if (effect_transition[name].active)
+        return;
+
       if (ch.current_animation_name == anim || ch.animated_model.animation.count(anim) == 0)
         return;
 
@@ -267,7 +271,7 @@ void scene_structure::display_gui() {
 
   // Handle start of walk in setting the current animation to Idle
   if (is_walk_clicked && effect_walk.active) {
-    effect_transition[current_active_character].transition_time = 0.2f;
+    effect_transition[current_active_character].transition_time = chase.param.blend_time;
     characters[current_active_character].set_current_animation("Idle");
     effect_walk.root_position = vec3(0, 0, 0);
   }

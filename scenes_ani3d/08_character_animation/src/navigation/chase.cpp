@@ -305,7 +305,8 @@ void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
         if (c.phase == tom_phase::falling) {
             tom.anim = p.anim_fall;
 
-            if (c.phase_timer >= p.fall_duration) {
+            // Start the blend toward StandUp slightly before Death ends
+            if (c.phase_timer >= p.fall_duration - 1.2f * p.blend_time) {
                 c.phase = tom_phase::standing_up;
                 c.phase_timer = 0.0f;
             }
@@ -313,7 +314,8 @@ void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
         else if (c.phase == tom_phase::standing_up) {
             tom.anim = p.anim_standup;
 
-            if (c.phase_timer >= p.standup_duration) {
+            // Start the blend toward Looking slightly before StandUp ends
+            if (c.phase_timer >= p.standup_duration - 1.2f * p.blend_time) {
                 c.phase = tom_phase::looking;
                 c.phase_timer = 0.0f;
             }

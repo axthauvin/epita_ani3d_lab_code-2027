@@ -106,6 +106,20 @@ void tom_replan(chase_structure& c, nav_grid_structure const& g)
     set_path(c.tom, raw, nav_smooth_path(g, raw, false));
 }
 
+void jerry_follow_path(chase_structure& c, nav_grid_structure const& g, nav_search_result const& from_jerry, int goal)
+{
+    std::vector<vec2> raw = nav_extract_path(g, from_jerry, goal);
+    if (raw.empty()) {
+        clear_path(c.jerry);
+        c.jerry_goal = -1;
+        return;
+    }
+    raw[0] = c.jerry.position;
+    set_path(c.jerry, raw, nav_smooth_path(g, raw, true));
+    c.jerry_goal = goal;
+    c.jerry_goal_pos = g.cell_center(goal);
+}
+
 void jerry_replan(chase_structure& c, nav_grid_structure const& g)
 {
     chase_parameters const& p = c.param;
@@ -191,16 +205,32 @@ void jerry_replan(chase_structure& c, nav_grid_structure const& g)
         return;
     }
 
-    std::vector<vec2> raw = nav_extract_path(g, from_jerry, goal);
-    if (raw.empty()) {
-        clear_path(jerry);
+    jerry_follow_path(c, g, from_jerry, goal);
+}
+
+void jerry_go_to_nearest_hole(chase_structure& c, nav_grid_structure const& g)
+{
+    nav_search_result const from_jerry = nav_search(g, g.cell_of(c.jerry.position), -1, true);
+
+    int goal = -1;
+
+    for (int k = 0; k < g.nx * g.nz; k++) {
+        if (g.hole_id[k] >= 0 && from_jerry.dist[k] < 1e29f) {
+            if (goal == -1)
+                goal = k;
+            else if (from_jerry.dist[k] < from_jerry.dist[goal])
+                goal = k;
+
+        }
+    }
+
+    if (goal < 0) {
+        clear_path(c.jerry);
         c.jerry_goal = -1;
         return;
     }
-    raw[0] = jerry.position;
-    set_path(jerry, raw, nav_smooth_path(g, raw, true));
-    c.jerry_goal = goal;
-    c.jerry_goal_pos = g.cell_center(goal);
+
+    jerry_follow_path(c, g, from_jerry, goal);
 }
 
 void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
@@ -265,6 +295,7 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
         c.jerry_goal = -1;
         c.hidden_elapsed = 0.0f;
         c.jerry_dancing = false;
+        c.force_hole = false;
         clear_path(jerry);
         return;
     }
@@ -272,7 +303,9 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
     // Jerry dances while Tom is far
     float const d_tom = norm(c.tom.position - jerry.position);
 
-    if (!c.jerry_dancing && d_tom > p.dance_distance)
+    if (c.force_hole)
+        c.jerry_dancing = false;
+    else if (!c.jerry_dancing && d_tom > p.dance_distance)
         c.jerry_dancing = true;
     else if (c.jerry_dancing && d_tom < 0.7f * p.dance_distance) // with hystereris
         c.jerry_dancing = false;
@@ -287,7 +320,10 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
     c.replan_timer_jerry -= dt;
     if (c.replan_timer_jerry <= 0.0f) {
         c.replan_timer_jerry = p.replan_period;
-        jerry_replan(c, g);
+        if (c.force_hole)
+            jerry_go_to_nearest_hole(c, g);
+        else
+            jerry_replan(c, g);
     }
     agent_advance(jerry, dt, 1.0f);
 }
@@ -416,6 +452,16 @@ void chase_update(chase_structure& c, nav_grid_structure const& g, float dt)
 
     update_jerry(c, g, dt);
     update_tom(c, g, dt);
+}
+
+void chase_force_jerry_to_hole(chase_structure& c)
+{
+    if (c.state != jerry_state::running)
+        return;
+
+    c.force_hole = true;
+    c.cooldown = 0.0f;
+    c.replan_timer_jerry = 0.0f;
 }
 
 void chase_apply(chase_structure& c, nav_grid_structure const& g, character_structure& tom, character_structure& jerry)

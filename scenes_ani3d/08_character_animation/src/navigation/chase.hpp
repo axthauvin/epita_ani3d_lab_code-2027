@@ -85,6 +85,7 @@ struct chase_structure {
     float phase_timer = 0.0f;
     bool jerry_dancing = false;
     float hidden_elapsed = 0.0f;
+    bool force_hole = false;                    // Jerry runs to the nearest hole, whatever Tom does
 };
 
 // Reset positions and state
@@ -92,6 +93,9 @@ void chase_initialize(chase_structure& chase, nav_grid_structure const& grid);
 
 // Update the AI and move the agents
 void chase_update(chase_structure& chase, nav_grid_structure const& grid, float dt);
+
+// Debug: make Jerry go straight to the nearest hole
+void chase_force_jerry_to_hole(chase_structure& chase);
 
 // Write the agent positions into the skeletons
 void chase_apply(chase_structure& chase, nav_grid_structure const& grid, character_structure& tom, character_structure& jerry);

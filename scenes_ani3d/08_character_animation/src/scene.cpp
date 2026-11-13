@@ -271,6 +271,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Free cells", &gui.display_nav_free);
   ImGui::SameLine();
   ImGui::Checkbox("Paths", &gui.display_paths);
+  if (ImGui::Button("Force Jerry to hole"))
+    chase_force_jerry_to_hole(chase);
   ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Catch gap", &chase.param.catch_gap, 0.1f, 2.0f);

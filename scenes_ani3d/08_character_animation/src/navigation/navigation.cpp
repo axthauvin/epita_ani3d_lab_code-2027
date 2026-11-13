@@ -123,7 +123,7 @@ void nav_grid_build(nav_grid_structure& g,
     g.origin = {pmin.x, pmin.z};
     g.nx = int((pmax.x - pmin.x) / g.cell_size) + 1;
     g.nz = int((pmax.z - pmin.z) / g.cell_size) + 1;
-    g.floor_y = pmin.y + 0.2;
+    g.floor_y = 0.0f;
     int const N = g.nx * g.nz;
     g.blocked.assign(N, 0);
     g.hole_id.assign(N, -1);

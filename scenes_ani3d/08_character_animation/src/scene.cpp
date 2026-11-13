@@ -10,7 +10,8 @@ using namespace cgp;
 float constexpr house_scale = 0.2f;
 int constexpr mixamo_head_index = 10;
 
-void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
+void initialize_house(std::vector<mesh_drawable> &house, std::vector<mesh_drawable> &house_roof,
+                      std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes);
 
@@ -26,7 +27,7 @@ void scene_structure::initialize() {
   sphere_ik.material.color = {1, 0, 0};
 
   std::cout << "- Load house" << std::endl;
-  initialize_house(house, holes, hole_boxes, house_collision_meshes);
+  initialize_house(house, house_roof, holes, hole_boxes, house_collision_meshes);
   nav_build_parameters nav_param;
   nav_grid_build(nav_grid, house_collision_meshes, hole_boxes, nav_param);
   chase_debug_initialize(chase_debug, nav_grid);
@@ -66,9 +67,13 @@ void scene_structure::display_frame() {
   if (gui.display_frame)
     draw(global_frame, environment);
 
-  if (gui.display_house)
+  if (gui.display_house) {
     for (auto &mesh : house)
       draw(mesh, environment);
+    if (gui.display_roof)
+      for (auto &mesh : house_roof)
+        draw(mesh, environment);
+  }
 
   // Update the local time for each character
   for (auto &entry : characters) {
@@ -224,6 +229,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Global Frame", &gui.display_frame);
   ImGui::SameLine();
   ImGui::Checkbox("House", &gui.display_house);
+  ImGui::SameLine();
+  ImGui::Checkbox("Roof", &gui.display_roof);
   ImGui::Checkbox("Wireframe", &gui.display_wireframe);
   ImGui::Checkbox("Display surface", &gui.display_surface);
   ImGui::SameLine();
@@ -417,7 +424,8 @@ void scene_structure::keyboard_event() {
 }
 void scene_structure::idle_frame() { camera_control.idle_frame(); }
 
-void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &holes,
+void initialize_house(std::vector<mesh_drawable> &house, std::vector<mesh_drawable> &house_roof,
+                      std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes) {
   auto elements = mesh_load_file_obj_advanced(project::path + "assets/house/", "house.obj");
@@ -460,7 +468,16 @@ void initialize_house(std::vector<mesh_drawable> &house, std::vector<vec3> &hole
     holes.push_back(0.5f * (entry.second.first + entry.second.second));
   }
 
-  house = mesh_obj_advanced_loader::convert_to_mesh_drawable(elements);
-  for (auto &part : house)
-    part.model.scaling = house_scale;
+  std::vector<mesh_drawable> drawables = mesh_obj_advanced_loader::convert_to_mesh_drawable(elements);
+
+  house.clear();
+  house_roof.clear();
+  for (int k = 0; k < int(drawables.size()); k++) {
+    drawables[k].model.scaling = house_scale;
+    bool const is_roof = elements[k].name.find("Ceiling") != std::string::npos;
+    if (is_roof)
+      house_roof.push_back(drawables[k]);
+    else
+      house.push_back(drawables[k]);
+  }
 }

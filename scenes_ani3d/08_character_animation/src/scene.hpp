@@ -18,6 +18,7 @@ struct gui_parameters {
 	bool display_wireframe = false;
 	bool display_surface = true;
 	bool display_house = false;
+	bool display_roof = false;
 	bool display_texture = true;
 	bool display_skeleton = true;
 	bool display_skeleton_joint_sphere = false;
@@ -63,6 +64,7 @@ struct scene_structure : cgp::scene_inputs_generic {
 	mesh_drawable sphere_ik;
 	mesh_drawable ground;
 	std::vector<mesh_drawable> house; // One drawable per material of the house
+	std::vector<mesh_drawable> house_roof;
 
 	// Split house meshes into two classes: collision & holes meshes
 	std::vector<cgp::vec3> holes;

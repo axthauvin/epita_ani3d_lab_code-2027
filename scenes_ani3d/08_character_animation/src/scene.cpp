@@ -276,6 +276,8 @@ void scene_structure::display_gui() {
   ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Catch gap", &chase.param.catch_gap, 0.1f, 2.0f);
+  ImGui::SliderFloat("Fall push distance", &chase.param.fall_push_distance, 0.0f, 3.0f);
+  ImGui::SliderFloat("Fall push duration", &chase.param.fall_push_duration, 0.1f, 2.0f);
   ImGui::Unindent();
 
   // Handle start of walk in setting the current animation to Idle

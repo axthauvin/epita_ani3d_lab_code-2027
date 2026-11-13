@@ -50,6 +50,8 @@ struct chase_parameters {
     std::string anim_standup = "StandUp";
     std::string anim_look = "Looking";
     float fall_duration = 2.0f;         // overwritten from the Death animation length
+    float fall_push_distance = 1.0f;    // Tom bounces back from the wall when he hits it
+    float fall_push_duration = 0.5f;    // Tom bouces at the wall for this duration, then lies down
     float lying_duration = 4.0f;
     float standup_duration = 2.0f;      // overwritten from the StandUp animation length
     float looking_duration = 7.0f;

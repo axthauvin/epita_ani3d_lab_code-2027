@@ -328,6 +328,17 @@ void update_jerry(chase_structure& c, nav_grid_structure const& g, float dt)
     agent_advance(jerry, dt, 1.0f);
 }
 
+float v(float t, const float v0, const float T) {
+    if (t < 0.0f)
+        return v0;
+    if (t > T)
+        return 0.0f;
+
+    float const a = -v0 / (T * T);
+    return a * t * t + v0;
+}
+
+
 void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
 {
     chase_parameters const& p = c.param;
@@ -347,6 +358,13 @@ void update_tom(chase_structure& c, nav_grid_structure const& g, float dt)
                 c.phase = tom_phase::lying;
                 c.phase_timer = 0.0f;
             }
+
+            const vec2 back_dir = normalize(tom.position - g.hole_center[c.hole_current]);
+
+            const float T = p.fall_push_duration;
+            const float v0 = 1.5f * p.fall_push_distance / T;
+
+            tom.position += back_dir * v(c.phase_timer, v0, T) * dt;
         }
         else if (c.phase == tom_phase::lying) {
             tom.anim = p.anim_fall; // keep the last pose of Death

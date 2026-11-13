@@ -15,7 +15,7 @@ struct nav_grid_structure {
     cgp::vec2 origin = {0.0f, 0.0f};
     int nx = 0;
     int nz = 0;
-    float floor_y = 0.0f;
+    float floor_y = 0.2f;
 
     // TODO: convert to vector of bool?
     std::vector<char> blocked;              // 1 if an obstacle occupies the cell

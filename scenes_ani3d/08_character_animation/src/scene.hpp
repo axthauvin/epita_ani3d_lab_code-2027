@@ -6,6 +6,7 @@
 
 #include "animated_character/animated_character.hpp"
 #include "effects/effects.hpp"
+#include "effects/squash.hpp"
 #include "navigation/chase.hpp"
 #include "navigation/chase_debug.hpp"
 
@@ -75,6 +76,8 @@ struct scene_structure : cgp::scene_inputs_generic {
 	nav_grid_structure nav_grid;
 	chase_structure chase;
 	chase_debug_structure chase_debug;
+
+	squash_structure tom_squash;
 
 	// ****************************** //
 	// Functions

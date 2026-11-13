@@ -7,6 +7,7 @@ void animated_model_structure::skinning_lbs(std::string const& mesh_name)
     cgp::mesh const& mesh_bind_pose = rigged_mesh[mesh_name].mesh_bind_pose;
     cgp::mesh& mesh_deformed = rigged_mesh[mesh_name].mesh_deformed;
     controller_skinning_structure const& controller_skinning = rigged_mesh[mesh_name].controller_skinning;
+    cgp::numarray<vec3> const& squash_offset = rigged_mesh[mesh_name].squash_offset;
 
 
     // Prepare the transformation matrix for all the joints that impact the current mesh
@@ -26,7 +27,10 @@ void animated_model_structure::skinning_lbs(std::string const& mesh_name)
     for(int k_vertex=0; k_vertex<N_vertex; ++k_vertex) {
         int N_dependence = controller_skinning.vertex_to_joint_dependence.at(k_vertex).size();
         auto const& vertex_to_joint_dependence = controller_skinning.vertex_to_joint_dependence.at(k_vertex);
-        vec3 const& p0 = mesh_bind_pose.position.at(k_vertex);
+        vec3 p0 = mesh_bind_pose.position.at(k_vertex);
+        // apply squash offset if it exists
+        if (squash_offset.size() > 0)
+            p0 += squash_offset.at(k_vertex);
         vec3 const& n0 = mesh_bind_pose.normal.at(k_vertex);
 
         vec3 p_accumulated;

@@ -168,6 +168,17 @@ void scene_structure::display_frame() {
     effect_rotate_head_toward_objective_position(tom_skeleton, mixamo_head_index, jerry_position);
   }
 
+  if (gui.chase_active) {
+    float const dt = inputs.time_interval;
+    if (chase.phase == tom_phase::falling) // squash Tom when he hits the wall
+      tom_squash.amount = std::min(1.0f, tom_squash.amount + tom_squash.squash_speed * dt);
+    else if (chase.phase != tom_phase::lying) // reinflate Tom when he gets up
+      tom_squash.amount = std::max(0.0f, tom_squash.amount - tom_squash.reinflate_speed * dt);
+
+    rigged_mesh_structure &tom_body = characters["Tom"].animated_model.rigged_mesh["body"];
+    squash_compute_offset(tom_squash, tom_body.mesh_bind_pose.position, tom_body.squash_offset);
+  }
+
   // ********************************** //
   // Compute Skinning deformation
   // ********************************** //
@@ -178,6 +189,34 @@ void scene_structure::display_frame() {
       std::string mesh_name = rigged_mesh_entry.first;
       animated_model.skinning_lbs(mesh_name);
     }
+  }
+  
+  // tom must be 'pushed' against the floor when he is squashed, otherwise he float above the floor
+  if (gui.chase_active && tom_squash.amount > 0) {
+    mesh &tom_mesh = characters["Tom"].animated_model.rigged_mesh["body"].mesh_deformed;
+    
+    float press = tom_squash.amount; // how much Tom is pressed on the floor, from 0 to 1
+    
+    if (chase.phase == tom_phase::falling) // to avoid push progressively
+      press = std::min(1.0f, chase.phase_timer / chase.param.fall_duration);
+
+    // The height scale is the factor by which the height of Tom is reduced when he is squashed
+    float const height_scale = 1.0f - tom_squash.flatness * press;
+
+    float lowest = tom_mesh.position[0].y;
+    
+    for (vec3 const &p : tom_mesh.position) {
+      if (lowest > p.y)
+        lowest = p.y; // lowest point of Tom
+    }
+    
+    for (vec3 &p : tom_mesh.position) {
+      // push all the points of Tom toward the floor, the lowest point is pushed to the floor
+      p.y = nav_grid.floor_y + height_scale * (p.y - lowest);
+    }
+      
+    // update normals for the lighting
+    normal_per_vertex(tom_mesh.position, tom_mesh.connectivity, tom_mesh.normal); 
   }
 
   // ************************************** //
@@ -278,6 +317,8 @@ void scene_structure::display_gui() {
   ImGui::SliderFloat("Catch gap", &chase.param.catch_gap, 0.1f, 2.0f);
   ImGui::SliderFloat("Fall push distance", &chase.param.fall_push_distance, 0.0f, 3.0f);
   ImGui::SliderFloat("Fall push duration", &chase.param.fall_push_duration, 0.1f, 2.0f);
+  ImGui::SliderFloat("Flatness", &tom_squash.flatness, 0.0f, 1.0f);
+  ImGui::SliderFloat("Reinflate speed", &tom_squash.reinflate_speed, 0.1f, 5.0f);
   ImGui::Unindent();
 
   // Handle start of walk in setting the current animation to Idle

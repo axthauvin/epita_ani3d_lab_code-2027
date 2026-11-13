@@ -10,6 +10,7 @@ struct rigged_mesh_structure {
     cgp::mesh mesh_bind_pose;  // Bind pose (/un-deformed) mesh
     cgp::mesh mesh_deformed;   // Deformed mesh
     controller_skinning_structure controller_skinning;   // skinning weights dependence
+    cgp::numarray<cgp::vec3> squash_offset;
 };
 
 struct animated_model_structure {

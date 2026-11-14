@@ -286,3 +286,33 @@ void effect_ik_compute(effect_ik_structure const& effect_ik, skeleton_structure&
 	(void)effect_ik;
 	(void)skeleton;
 }
+
+
+void effect_dizzy_stars_initialize(effect_dizzy_stars_structure& effect, std::string const& directory)
+{
+	auto elements = mesh_load_file_obj_advanced(directory, "star.obj");
+	effect.star = mesh_obj_advanced_loader::convert_to_mesh_drawable(elements);
+}
+
+void effect_dizzy_stars_draw(effect_dizzy_stars_structure& effect, skeleton_structure const& skeleton,
+							 int joint_head_index, float time, float appear,
+							 environment_generic_structure const& environment)
+{
+	vec3 const head = skeleton.joint_matrix_global[joint_head_index].get_block_translation();
+
+	for (int k = 0; k < effect.star_count; k++) {
+		// Stars are evenly spread on a circle that rotates around the head
+		float const angle = effect.orbit_speed * time + 2.0f * Pi * k / effect.star_count;
+		vec3 const position = head + vec3(effect.radius * std::cos(angle),
+									effect.height + 0.03f * std::sin(3.0f * time + k),
+									effect.radius * std::sin(angle));
+
+		// Draw all the stars
+		for (auto& part : effect.star) {
+			part.model.translation = position;
+			part.model.scaling = effect.star_scale * appear;
+			part.model.rotation = rotation_axis_angle({0, 1, 0}, effect.spin_speed * time + k);
+			draw(part, environment);
+		}
+	}
+}

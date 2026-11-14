@@ -38,6 +38,9 @@ void scene_structure::initialize() {
   nav_grid_build(nav_grid, house_collision_meshes, hole_boxes, nav_param);
   chase_debug_initialize(chase_debug, nav_grid);
 
+  std::cout << "- Load stars" << std::endl;
+  effect_dizzy_stars_initialize(effect_stars, project::path + "assets/star/");
+
   std::cout << "- Load Jerry character" << std::endl;
   characters["Jerry"] = load_character_jerry();
   characters["Jerry"].animated_model.apply_transformation({-3.5f, 0, 0});
@@ -263,6 +266,15 @@ void scene_structure::display_frame() {
       character.sk_drawable.display_segments = gui.display_skeleton_bone;
       draw(character.sk_drawable, environment);
     }
+  }
+
+  // Display stars when Tom is lying
+  if (gui.chase_active && chase.phase == tom_phase::lying) {
+    // Stars grow at the start of the phase and shrink at the end
+    float const appear = std::clamp(std::min(chase.phase_timer, chase.param.lying_duration - chase.phase_timer)
+                                    / effect_stars.fade, 0.0f, 1.0f);
+    effect_dizzy_stars_draw(effect_stars, characters["Tom"].animated_model.skeleton,
+                            mixamo_head_index, chase.time, appear, environment);
   }
 
   chase_debug_draw(chase_debug, chase, nav_grid, environment, gui.display_nav_grid,

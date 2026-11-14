@@ -79,6 +79,8 @@ struct scene_structure : cgp::scene_inputs_generic {
 
 	squash_structure tom_squash;
 
+	effect_dizzy_stars_structure effect_stars;
+
 	// ****************************** //
 	// Functions
 	// ****************************** //

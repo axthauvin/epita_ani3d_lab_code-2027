@@ -36,6 +36,16 @@ struct effect_ik_structure {
 	bool active = false; // Is the IK effect currently active
 };
 
+struct effect_dizzy_stars_structure {
+	std::vector<cgp::mesh_drawable> star;
+	int star_count = 3;
+	float radius = 0.25f; // orbit radius around the head
+	float height = 0.3f; // height above the head joint
+	float orbit_speed = 3.0f; // rad/s around the head
+	float spin_speed = 4.0f; // rad/s of each star around itself
+	float star_scale = 0.015f;
+	float fade = 0.3f; // stars grow at the start and shrink at the end
+};
 
 // Update a transition_structure before starting a new transition
 void effect_transition_start(effect_transition_structure& effect_transition, character_structure& character, std::string const& destination_anim);
@@ -59,3 +69,9 @@ void effect_walking_keyboard_event(effect_transition_structure& effect_transitio
 
 // Move the character skeleton root
 void effect_place_root(skeleton_structure& skeleton, cgp::vec3 const& position, float angle);
+
+// Load the star model
+void effect_dizzy_stars_initialize(effect_dizzy_stars_structure& effect, std::string const& directory);
+
+// Draw the stars orbiting around the head
+void effect_dizzy_stars_draw(effect_dizzy_stars_structure& effect, skeleton_structure const& skeleton, int joint_head_index, float time, float appear, cgp::environment_generic_structure const& environment);

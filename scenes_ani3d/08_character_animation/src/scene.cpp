@@ -10,7 +10,9 @@ using namespace cgp;
 float constexpr house_scale = 0.2f;
 int constexpr mixamo_head_index = 10;
 
-void initialize_house(std::vector<mesh_drawable> &house, std::vector<mesh_drawable> &house_roof,
+void initialize_house(std::vector<mesh_drawable> &house,
+                      std::vector<mesh_drawable> &house_roof,
+                      std::vector<mesh_drawable> &house_walls,
                       std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes);
@@ -21,9 +23,9 @@ void scene_structure::initialize() {
   // Sofa center is determined by the mean position of sofa vertices
   // import pandas as pd
   // pd.read_csv("couch.csv").mean() # where "couch.csv" lists x,y,z coordinates
-  vec3 const sofa_center_obj = {-10.30f, 4.52f, -10.92f};
+  vec3 const sofa_center_obj = {-10.3f, 4.5f, -7.0f};
   vec3 const sofa_center = house_scale * sofa_center_obj;
-  vec3 const sofa_rotation_dist = {6.0f, 4.0f, 6.0f};
+  vec3 const sofa_rotation_dist = {5.0f, 4.0f, 5.0f};
   camera_control.set_rotation_axis_y();
   camera_control.look_at(sofa_center + sofa_rotation_dist, sofa_center, {0, 1, 0});
   global_frame.initialize_data_on_gpu(mesh_primitive_frame());
@@ -33,7 +35,7 @@ void scene_structure::initialize() {
   sphere_ik.material.color = {1, 0, 0};
 
   std::cout << "- Load house" << std::endl;
-  initialize_house(house, house_roof, holes, hole_boxes, house_collision_meshes);
+  initialize_house(house, house_roof, house_walls, holes, hole_boxes, house_collision_meshes);
   nav_build_parameters nav_param;
   nav_grid_build(nav_grid, house_collision_meshes, hole_boxes, nav_param);
   chase_debug_initialize(chase_debug, nav_grid);
@@ -81,6 +83,9 @@ void scene_structure::display_frame() {
       draw(mesh, environment);
     if (gui.display_roof)
       for (auto &mesh : house_roof)
+        draw(mesh, environment);
+    if (gui.display_walls)
+      for (auto &mesh : house_walls)
         draw(mesh, environment);
   }
 
@@ -288,6 +293,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("House", &gui.display_house);
   ImGui::SameLine();
   ImGui::Checkbox("Roof", &gui.display_roof);
+  ImGui::SameLine();
+  ImGui::Checkbox("Walls", &gui.display_walls);
   ImGui::Checkbox("Wireframe", &gui.display_wireframe);
   ImGui::Checkbox("Display surface", &gui.display_surface);
   ImGui::SameLine();
@@ -487,7 +494,9 @@ void scene_structure::keyboard_event() {
 }
 void scene_structure::idle_frame() { camera_control.idle_frame(); }
 
-void initialize_house(std::vector<mesh_drawable> &house, std::vector<mesh_drawable> &house_roof,
+void initialize_house(std::vector<mesh_drawable> &house,
+                      std::vector<mesh_drawable> &house_roof,
+                      std::vector<mesh_drawable> &house_walls,
                       std::vector<vec3> &holes,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes) {
@@ -535,11 +544,17 @@ void initialize_house(std::vector<mesh_drawable> &house, std::vector<mesh_drawab
 
   house.clear();
   house_roof.clear();
+  house_walls.clear();
+
   for (int k = 0; k < int(drawables.size()); k++) {
     drawables[k].model.scaling = house_scale;
     bool const is_roof = elements[k].name.find("Ceiling") != std::string::npos;
+    bool const is_wall = elements[k].name.find("House") != std::string::npos;
+
     if (is_roof)
       house_roof.push_back(drawables[k]);
+    else if (is_wall)
+      house_walls.push_back(drawables[k]);
     else
       house.push_back(drawables[k]);
   }

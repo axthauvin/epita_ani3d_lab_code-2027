@@ -18,19 +18,20 @@ struct gui_parameters {
 	bool display_frame = false;
 	bool display_wireframe = false;
 	bool display_surface = true;
-	bool display_house = false;
+	bool display_house = true;
 	bool display_roof = false;
+	bool display_walls = true;
 	bool display_texture = true;
-	bool display_skeleton = true;
+	bool display_skeleton = false;
 	bool display_skeleton_joint_sphere = false;
 	bool display_skeleton_joint_frame = false;
 	bool display_skeleton_bone = true;
 	bool rotate_head_effect_active = false;
 	// Chase params
-	bool chase_active = false;
-	bool display_nav_grid = true;
-	bool display_nav_free = true;
-	bool display_paths = true;
+	bool chase_active = true;
+	bool display_nav_grid = false;
+	bool display_nav_free = false;
+	bool display_paths = false;
 };
 
 
@@ -66,6 +67,7 @@ struct scene_structure : cgp::scene_inputs_generic {
 	mesh_drawable ground;
 	std::vector<mesh_drawable> house; // One drawable per material of the house
 	std::vector<mesh_drawable> house_roof;
+	std::vector<mesh_drawable> house_walls;
 
 	// Split house meshes into two classes: collision & holes meshes
 	std::vector<cgp::vec3> holes;

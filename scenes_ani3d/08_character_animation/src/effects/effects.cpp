@@ -282,4 +282,7 @@ void effect_ik_compute(effect_ik_structure const& effect_ik, skeleton_structure&
 	 *      - mat4().set_identity() generate a 4x4 identity matrix
 	 *      
 	 */
+
+	(void)effect_ik;
+	(void)skeleton;
 }

@@ -116,7 +116,7 @@ void effect_walking_keyboard_event(effect_transition_structure& effect_transitio
 
 // This function implements the change of position of the character when a directional key is pressed
 // This function is called at every frame when the walk effect is active
-void effect_walking(effect_walking_structure& effect_walking,  character_structure& character, cgp::input_devices const& inputs, effect_transition_structure const& effect_transition)
+void effect_walking(effect_walking_structure& effect_walking, character_structure& character, cgp::input_devices const& inputs, effect_transition_structure const& effect_transition)
 {
 	/** TO DO : An displacement of the character along the direction of the walk.
 	 *   The character should be able to move straight, and turn, based on the user command.
@@ -174,6 +174,8 @@ void effect_walking(effect_walking_structure& effect_walking,  character_structu
 		effect_walking.root_position += speed * dt * (R * vec3(0, 0, 1));
 
 	effect_place_root(character.animated_model.skeleton, effect_walking.root_position, effect_walking.root_angle);
+
+	(void)effect_transition; // I do not know why but we did not use it...
 }
 
 void effect_place_root(skeleton_structure& skeleton, vec3 const& position, float angle)

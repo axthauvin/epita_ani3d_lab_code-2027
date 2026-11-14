@@ -18,8 +18,14 @@ void initialize_house(std::vector<mesh_drawable> &house, std::vector<mesh_drawab
 void scene_structure::initialize() {
 // Give access to the inputs and window global state to the camera controler
   camera_control.initialize(inputs, window);
+  // Sofa center is determined by the mean position of sofa vertices
+  // import pandas as pd
+  // pd.read_csv("couch.csv").mean() # where "couch.csv" lists x,y,z coordinates
+  vec3 const sofa_center_obj = {-10.30f, 4.52f, -10.92f};
+  vec3 const sofa_center = house_scale * sofa_center_obj;
+  vec3 const sofa_rotation_dist = {6.0f, 4.0f, 6.0f};
   camera_control.set_rotation_axis_y();
-  camera_control.look_at({4.0f, 3.0f, 3.0f}, {0, 0, 0}, {0, 0, 1});
+  camera_control.look_at(sofa_center + sofa_rotation_dist, sofa_center, {0, 1, 0});
   global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
   sphere_ik.initialize_data_on_gpu(mesh_primitive_sphere());

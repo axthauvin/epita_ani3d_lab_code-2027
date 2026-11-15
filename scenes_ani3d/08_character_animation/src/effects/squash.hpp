@@ -2,8 +2,6 @@
 
 #include "cgp/cgp.hpp"
 
-// TODO: this might be dumb because its only used by Tom
-// but its usefull to edit the parameters of the squash effect
 struct squash_structure {
     float amount = 0.0f;
     float flatness = 0.85f;

@@ -78,7 +78,7 @@ void refresh_curves(debug_curve_structure& smooth, debug_curve_structure& raw, a
 void chase_debug_initialize(chase_debug_structure& d, nav_grid_structure const& g)
 {
     float const y = g.floor_y + 0.02f;
-    build_cells(d.grid_blocked, g, [&](int c) { return g.blocked[c] != 0; }, {1.0f, 0.2f, 0.2f}, y);
+    build_cells(d.grid_blocked, g, [&](int c) { return g.blocked[c]; }, {1.0f, 0.2f, 0.2f}, y);
     build_cells(d.grid_hole, g, [&](int c) { return !g.blocked[c] && g.hole_id[c] >= 0; }, {0.2f, 0.4f, 1.0f}, y + 0.005f);
     build_cells(d.grid_free, g, [&](int c) { return !g.blocked[c] && g.hole_id[c] < 0; }, {0.3f, 0.9f, 0.3f}, y - 0.005f);
 

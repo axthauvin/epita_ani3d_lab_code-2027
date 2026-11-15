@@ -17,9 +17,7 @@ struct nav_grid_structure {
     int nz = 0;
     float floor_y = 0.0f;
 
-    // TODO: convert to vector of bool?
-    std::vector<char> blocked;              // 1 if an obstacle occupies the cell
-    // TODO: convert to vector of char?
+    std::vector<bool> blocked;              // true if an obstacle occupies the cell
     std::vector<int> hole_id;               // -1 for a normal cell, else index of the mouse hole
     std::vector<cgp::vec2> hole_center;     // center of each hole
     std::vector<cgp::vec2> hole_exit;       // free normal cell connected to each hole

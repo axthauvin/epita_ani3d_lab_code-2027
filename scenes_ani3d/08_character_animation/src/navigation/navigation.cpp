@@ -125,7 +125,7 @@ void nav_grid_build(nav_grid_structure& g,
     g.nz = int((pmax.z - pmin.z) / g.cell_size) + 1;
     g.floor_y = 0.0f;
     int const N = g.nx * g.nz;
-    g.blocked.assign(N, 0);
+    g.blocked.assign(N, false);
     g.hole_id.assign(N, -1);
 
     // Check for obstacle between these two bounds
@@ -169,7 +169,7 @@ void nav_grid_build(nav_grid_structure& g,
                     // Block if too close (margin threshold)
                     //  We do not want Tom and Jerry to run into walls with their model halfway inside.
                     if (d <= param.margin || point_in_triangle(p, a2, b2, c2))
-                        g.blocked[idx] = 1;
+                        g.blocked[idx] = true;
                 }
             }
         }
@@ -187,7 +187,7 @@ void nav_grid_build(nav_grid_structure& g,
 
     // Mark all corners as blocked
     for (int c : corners) {
-        g.blocked[c] = 1;
+        g.blocked[c] = true;
         stack.push_back(c);
     }
 
@@ -211,7 +211,7 @@ void nav_grid_build(nav_grid_structure& g,
             if (g.blocked[n])
                 continue; // already blocked, fill stops here
 
-            g.blocked[n] = 1;
+            g.blocked[n] = true;
             stack.push_back(n); // recursion
         }
     }
@@ -233,7 +233,7 @@ void nav_grid_build(nav_grid_structure& g,
 
             if (p.x >= bmin.x - e && p.x <= bmax.x + e && p.y >= bmin.z - e && p.y <= bmax.z + e) {
                 // Mark it as free in the blocked vector, but as occupied in the hole_id vector
-                g.blocked[idx] = 0;
+                g.blocked[idx] = false;
                 g.hole_id[idx] = h;
             }
         }
@@ -257,7 +257,7 @@ void nav_grid_build(nav_grid_structure& g,
             int const k = g.cell_of(p);
 
             if (g.blocked[k]) {
-                g.blocked[k] = 0;
+                g.blocked[k] = false;
                 g.hole_id[k] = h;
             }
             else if (g.hole_id[k] < 0) {

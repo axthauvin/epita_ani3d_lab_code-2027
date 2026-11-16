@@ -9,6 +9,8 @@ using namespace cgp;
 
 float constexpr house_scale = 0.2f;
 int constexpr mixamo_head_index = 10;
+int constexpr tom_head_index = 15; // mixamorig_Head
+vec3 const tom_eye_offset = {0.0f, 0.23f, 0.28f}; // trust
 
 void initialize_house(std::vector<mesh_drawable> &house,
                       std::vector<mesh_drawable> &house_roof,
@@ -17,10 +19,7 @@ void initialize_house(std::vector<mesh_drawable> &house,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes);
 
-void scene_structure::initialize_camera() {
-  if (camera_control.is_initialized())
-    return;
-  camera_control.initialize(inputs, window);
+void scene_structure::reset_camera_to_sofa() {
   // Sofa center is determined by the mean position of sofa vertices
   // import pandas as pd
   // pd.read_csv("couch.csv").mean() # where "couch.csv" lists x,y,z coordinates
@@ -28,12 +27,14 @@ void scene_structure::initialize_camera() {
   vec3 const sofa_center = house_scale * sofa_center_obj;
   vec3 const sofa_rotation_dist = {5.0f, 4.0f, 5.0f};
   camera_control.set_rotation_axis_y();
+  camera_control.camera_model.roll = 0.0f; // reset tilt
   camera_control.look_at(sofa_center + sofa_rotation_dist, sofa_center, {0, 1, 0});
 }
 
 void scene_structure::initialize() {
   // Give access to the inputs and window global state to the camera controler
-  initialize_camera();
+  camera_control.initialize(inputs, window);
+  reset_camera_to_sofa();
   global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
   sphere_ik.initialize_data_on_gpu(mesh_primitive_sphere());
@@ -246,6 +247,8 @@ void scene_structure::display_frame() {
     character_structure &character = entry_character.second;
     if (gui.chase_active && entry_character.first == "Jerry" && !chase.jerry.visible)
       continue;
+    if (first_person_view_active && entry_character.first == "Tom") // hide tom model in first person view
+      continue;
     animated_model_structure &animated_model =
         entry_character.second.animated_model;
 
@@ -291,24 +294,27 @@ void scene_structure::display_frame() {
   chase_debug_draw(chase_debug, chase, nav_grid, environment, gui.display_nav_grid,
                    gui.display_nav_free, gui.display_paths && gui.chase_active);
 
-  // Activate / desactivate first person view
-  activate_first_person_view(); 
+  if (first_person_view_active)
+    update_first_person_camera();
 }
 
-void scene_structure::activate_first_person_view() {
+void scene_structure::update_first_person_camera() {
+  mat4 const &head = characters["Tom"].animated_model.skeleton.joint_matrix_global[tom_head_index];
+  mat3 const head_rotation = head.get_block_linear();
+  vec3 const forward = normalize(head_rotation * vec3{0, 0, 1});
+  vec3 const up = normalize(head_rotation * vec3{0, 1, 0});
+  vec3 const eye = head.get_block_translation() + head_rotation * tom_eye_offset;
 
-  if (!first_person_view_active)
-     {
-       initialize_camera();
-       return;
-     }
-  
-  vec3 const tom_head_position = characters["Tom"].animated_model.skeleton.joint_matrix_global[mixamo_head_index].get_block_translation();
-  vec3 const jerry_pos(chase.jerry.position.x, nav_grid.floor_y + 0.1f, chase.jerry.position.y);
-  
-  vec3 const tom_to_jerry = (jerry_pos - tom_head_position) / norm(jerry_pos - tom_head_position);
+  camera_orbit_euler &camera = camera_control.camera_model;
+  camera.set_rotation_axis({0, 1, 0});
+  camera.roll = 0.0f;
+  camera.look_at(eye, eye + forward);
 
-  camera_control.look_at(tom_head_position + tom_to_jerry * 1.0f, jerry_pos);
+  // compute camera roll from the head orientation
+  rotation_transform const orientation = camera.orientation();
+  vec3 const camera_right = orientation * vec3{1, 0, 0};
+  vec3 const camera_up = orientation * vec3{0, 1, 0};
+  camera.roll = std::atan2(dot(up, camera_right), dot(up, camera_up));
 }
 
 void scene_structure::display_gui() {
@@ -362,8 +368,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Paths", &gui.display_paths);
   if (ImGui::Button("Force Jerry to hole"))
     chase_force_jerry_to_hole(chase);
-  if (ImGui::Button("Activate first person Tom view"))
-    first_person_view_active = !first_person_view_active;
+  if (ImGui::Checkbox("Tom first person view", &first_person_view_active) && !first_person_view_active)
+    reset_camera_to_sofa();
   ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Catch gap", &chase.param.catch_gap, 0.1f, 2.0f);
@@ -504,7 +510,7 @@ void scene_structure::display_gui() {
 }
 
 void scene_structure::mouse_move_event() {
-  if (!inputs.keyboard.shift)
+  if (!inputs.keyboard.shift && !first_person_view_active)
     camera_control.action_mouse_move();
 }
 void scene_structure::mouse_click_event() {

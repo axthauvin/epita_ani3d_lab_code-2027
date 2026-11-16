@@ -81,12 +81,15 @@ struct scene_structure : cgp::scene_inputs_generic {
 
 	squash_structure tom_squash;
 
+	bool first_person_view_active = false;
+
 	effect_dizzy_stars_structure effect_stars;
 
 	// ****************************** //
 	// Functions
 	// ****************************** //
 
+	void initialize_camera();
 	void initialize();    // Standard initialization to be called before the animation loop
 	void display_frame(); // The frame display to be called within the animation loop
 	void display_gui();   // The display of the GUI, also called within the animation loop
@@ -95,5 +98,6 @@ struct scene_structure : cgp::scene_inputs_generic {
 	void mouse_click_event();
 	void keyboard_event();
 	void idle_frame();
+	void activate_first_person_view();
 
 };

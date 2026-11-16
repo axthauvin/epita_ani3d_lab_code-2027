@@ -139,7 +139,9 @@ void application_structure::animation_loop()
 
     s.camera_projection.aspect_ratio = s.window.aspect_ratio();
     s.environment.camera_projection = s.camera_projection.matrix();
-    glViewport(0, 0, s.window.width, s.window.height);
+    int framebuffer_width = 0, framebuffer_height = 0;
+    glfwGetFramebufferSize(s.window.glfw_window, &framebuffer_width, &framebuffer_height);
+    glViewport(0, 0, framebuffer_width, framebuffer_height);
 
     vec3 const& background_color = s.environment.background_color;
     glClearColor(background_color.x, background_color.y, background_color.z, 1.0f);

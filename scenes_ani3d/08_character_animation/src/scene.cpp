@@ -17,8 +17,9 @@ void initialize_house(std::vector<mesh_drawable> &house,
                       std::vector<std::pair<vec3, vec3>> &hole_boxes,
                       std::vector<mesh> &collision_meshes);
 
-void scene_structure::initialize() {
-// Give access to the inputs and window global state to the camera controler
+void scene_structure::initialize_camera() {
+  if (camera_control.is_initialized())
+    return;
   camera_control.initialize(inputs, window);
   // Sofa center is determined by the mean position of sofa vertices
   // import pandas as pd
@@ -28,6 +29,11 @@ void scene_structure::initialize() {
   vec3 const sofa_rotation_dist = {5.0f, 4.0f, 5.0f};
   camera_control.set_rotation_axis_y();
   camera_control.look_at(sofa_center + sofa_rotation_dist, sofa_center, {0, 1, 0});
+}
+
+void scene_structure::initialize() {
+  // Give access to the inputs and window global state to the camera controler
+  initialize_camera();
   global_frame.initialize_data_on_gpu(mesh_primitive_frame());
 
   sphere_ik.initialize_data_on_gpu(mesh_primitive_sphere());
@@ -284,6 +290,25 @@ void scene_structure::display_frame() {
 
   chase_debug_draw(chase_debug, chase, nav_grid, environment, gui.display_nav_grid,
                    gui.display_nav_free, gui.display_paths && gui.chase_active);
+
+  // Activate / desactivate first person view
+  activate_first_person_view(); 
+}
+
+void scene_structure::activate_first_person_view() {
+
+  if (!first_person_view_active)
+     {
+       initialize_camera();
+       return;
+     }
+  
+  vec3 const tom_head_position = characters["Tom"].animated_model.skeleton.joint_matrix_global[mixamo_head_index].get_block_translation();
+  vec3 const jerry_pos(chase.jerry.position.x, nav_grid.floor_y + 0.1f, chase.jerry.position.y);
+  
+  vec3 const tom_to_jerry = (jerry_pos - tom_head_position) / norm(jerry_pos - tom_head_position);
+
+  camera_control.look_at(tom_head_position + tom_to_jerry * 1.0f, jerry_pos);
 }
 
 void scene_structure::display_gui() {
@@ -337,6 +362,8 @@ void scene_structure::display_gui() {
   ImGui::Checkbox("Paths", &gui.display_paths);
   if (ImGui::Button("Force Jerry to hole"))
     chase_force_jerry_to_hole(chase);
+  if (ImGui::Button("Activate first person Tom view"))
+    first_person_view_active = !first_person_view_active;
   ImGui::SliderFloat("Tom speed", &chase.param.tom_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Jerry speed", &chase.param.jerry_speed, 0.2f, 5.0f);
   ImGui::SliderFloat("Catch gap", &chase.param.catch_gap, 0.1f, 2.0f);

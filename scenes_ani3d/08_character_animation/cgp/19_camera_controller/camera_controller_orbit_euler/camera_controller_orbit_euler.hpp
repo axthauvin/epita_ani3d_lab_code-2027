@@ -25,6 +25,8 @@ namespace cgp
 		void action_mouse_move() override;
 		void idle_frame() override;
 
+		bool is_initialized() const { return inputs || window; }
+
 		std::string doc_usage() const override;
 	};
 }
